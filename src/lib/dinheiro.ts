@@ -30,3 +30,8 @@ export function reais(centavos: number): string {
 export function numero(centavos: number): string {
   return semSimbolo.format(centavos / 100)
 }
+
+/** 0,0793 -> "7,9%" */
+export function porcento(fracao: number): string {
+  return (fracao * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'
+}

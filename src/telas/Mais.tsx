@@ -1,6 +1,9 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Resultado } from '../componentes'
-import type { DocParaImportar, Viagem } from '../dados/tipos'
+import type { Config, DocParaImportar, Lista, Viagem } from '../dados/tipos'
+import { exportarBackup, exportarExcel } from '../lib/exportar'
+import { Listas } from './Listas'
+import { Metas } from './Metas'
 import { hoje, mesDe, nomeDoMes } from '../lib/datas'
 import { lerCentavos, reais } from '../lib/dinheiro'
 import { firebase, sairELimpar } from '../firebase'
@@ -13,19 +16,89 @@ interface Props {
   aoGravar: (caminho: string, dados: object) => void
   aoExcluir: (caminho: string, dados: object, texto: string) => void
   aoImportar: (docs: DocParaImportar[]) => Promise<void>
+  config: Config | null
+  listas: Lista[]
+  aoLerTudo: () => Promise<DocParaImportar[]>
 }
 
+type Secao = 'viagens' | 'metas' | 'listas' | 'dados' | 'conta'
+const SECOES: { id: Secao; nome: string }[] = [
+  { id: 'viagens', nome: 'Viagens' },
+  { id: 'metas', nome: 'Metas' },
+  { id: 'listas', nome: 'Listas' },
+  { id: 'dados', nome: 'Dados' },
+  { id: 'conta', nome: 'Conta' },
+]
+
 export function Mais(props: Props) {
-  const instalar = useInstalar()
+  const [secao, setSecao] = useState<Secao>('viagens')
 
   return (
     <div className="mais">
-      <Viagens {...props} />
-      <Importar aoImportar={props.aoImportar} />
+      <div className="visoes cinco" role="tablist" aria-label="Seções de Mais">
+        {SECOES.map((s) => (
+          <button key={s.id} role="tab" aria-selected={secao === s.id} onClick={() => setSecao(s.id)}>
+            {s.nome}
+          </button>
+        ))}
+      </div>
+      {secao === 'viagens' && <Viagens {...props} />}
+      {secao === 'metas' &&
+        (props.config ? (
+          <Metas config={props.config} aoGravar={(c) => props.aoGravar('config/geral', c)} />
+        ) : (
+          <section className="vazio">
+            <h2>Ainda não há metas</h2>
+            <p>Importe a carga inicial na seção Dados.</p>
+          </section>
+        ))}
+      {secao === 'listas' && <Listas listas={props.listas} aoGravar={props.aoGravar} />}
+      {secao === 'dados' && (
+        <>
+          <Importar aoImportar={props.aoImportar} />
+          <Exportar aoLerTudo={props.aoLerTudo} />
+        </>
+      )}
+      {secao === 'conta' && <Conta email={props.email} />}
+    </div>
+  )
+}
 
-      <section className="bloco">
+function Exportar({ aoLerTudo }: Pick<Props, 'aoLerTudo'>) {
+  const [estado, setEstado] = useState('')
+  async function exportar(como: (docs: DocParaImportar[]) => void | Promise<void>) {
+    setEstado('Preparando o arquivo…')
+    try {
+      const docs = await aoLerTudo()
+      await como(docs)
+      setEstado(`Arquivo gerado com ${docs.length} registros.`)
+    } catch {
+      setEstado('Não foi possível gerar o arquivo. Confira a conexão e tente de novo.')
+    }
+  }
+  return (
+    <section className="bloco">
+      <h2>Exportar</h2>
+      <p>O Excel traz lançamentos, meses, posições, compras e vendas e histórico. O backup guarda tudo e pode ser importado de volta.</p>
+      <div className="botoes">
+        <button className="secundario" onClick={() => void exportar(exportarExcel)}>
+          Exportar para Excel
+        </button>
+        <button className="secundario" onClick={() => void exportar(exportarBackup)}>
+          Baixar backup
+        </button>
+      </div>
+      {estado && <p role="status">{estado}</p>}
+    </section>
+  )
+}
+
+function Conta({ email }: Pick<Props, 'email'>) {
+  const instalar = useInstalar()
+  return (
+      <section className="bloco sem-linha">
         <h2>Conta</h2>
-        <p>{props.email ?? 'Modo local, sem login.'}</p>
+        <p>{email ?? 'Modo local, sem login.'}</p>
         {instalar && (
           <button className="primario" onClick={instalar}>
             Instalar o app
@@ -41,7 +114,6 @@ export function Mais(props: Props) {
         )}
         <p className="apoio">Versão {__VERSAO__}</p>
       </section>
-    </div>
   )
 }
 
@@ -64,7 +136,7 @@ function Viagens({ viagens, caixinhaViagem, aoGravar, aoExcluir }: Props) {
   }
 
   return (
-    <section className="bloco">
+    <section className="bloco sem-linha">
       <h2>Viagens</h2>
       <Resultado rotulo="Saldo da caixinha de viagem" valor={caixinhaViagem} forte />
       <ul className="viagens">

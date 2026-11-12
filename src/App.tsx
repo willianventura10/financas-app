@@ -3,12 +3,13 @@ import { onAuthStateChanged, type User } from 'firebase/auth'
 import { firebase } from './firebase'
 import { criarRepoFirestore } from './dados/repoFirestore'
 import { criarRepoLocal } from './dados/repoLocal'
-import type { Config, EstadoSync, Lancamento, MesDoc, Viagem } from './dados/tipos'
+import type { Config, EstadoSync, Historico, Lancamento, Lista, MesDoc, Operacao, Posicao, Viagem } from './dados/tipos'
 import { mesVazio } from './lib/calculos'
 import { hoje, mesDe, nomeDoMes, somarMes } from './lib/datas'
 import { Login } from './telas/Login'
 import { Inicio } from './telas/Inicio'
 import { Gastos } from './telas/Gastos'
+import { Investimentos } from './telas/Investimentos'
 import { Lancar } from './telas/Lancar'
 import { Mais } from './telas/Mais'
 
@@ -54,6 +55,10 @@ function Principal({ usuario }: { usuario: User | null }) {
   const [meses, setMeses] = useState<MesDoc[]>([])
   const [config, setConfig] = useState<Config | null>(null)
   const [viagens, setViagens] = useState<Viagem[]>([])
+  const [posicoes, setPosicoes] = useState<Posicao[]>([])
+  const [operacoes, setOperacoes] = useState<Operacao[]>([])
+  const [historico, setHistorico] = useState<Historico[]>([])
+  const [listas, setListas] = useState<Lista[]>([])
   const [editor, setEditor] = useState<'novo' | Lancamento | null>(null)
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const conectado = useConectado()
@@ -72,6 +77,10 @@ function Principal({ usuario }: { usuario: User | null }) {
       repo.ouvirColecao<MesDoc>('meses', setMeses),
       repo.ouvirColecao<Config>('config', (docs) => setConfig(docs[0] ?? null)),
       repo.ouvirColecao<Viagem>('viagens', setViagens),
+      repo.ouvirColecao<Posicao>('posicoes', setPosicoes),
+      repo.ouvirColecao<Operacao>('operacoes', setOperacoes),
+      repo.ouvirColecao<Historico>('historico', setHistorico),
+      repo.ouvirColecao<Lista>('listas', setListas),
     ]
     return () => parar.forEach((p) => p())
   }, [repo])
@@ -195,10 +204,15 @@ function Principal({ usuario }: { usuario: User | null }) {
             />
           )}
           {aba === 'invest' && (
-            <section className="vazio">
-              <h2>Investimentos chegam na etapa 3</h2>
-              <p>Painel, posições, compras e vendas, histórico e sugestão de aporte entram aqui.</p>
-            </section>
+            <Investimentos
+              posicoes={posicoes}
+              operacoes={operacoes}
+              historico={historico}
+              config={config}
+              mes={mes}
+              aoGravar={gravar}
+              aoExcluir={excluir}
+            />
           )}
           {aba === 'mais' && (
             <Mais
@@ -208,6 +222,9 @@ function Principal({ usuario }: { usuario: User | null }) {
               aoGravar={gravar}
               aoExcluir={excluir}
               aoImportar={(docs) => repo.importar(docs)}
+              config={config}
+              listas={listas}
+              aoLerTudo={() => repo.lerTudo()}
             />
           )}
         </main>

@@ -29,7 +29,7 @@ export function criarRepoLocal(armazem: Armazem = armazemDoNavegador): Repositor
   function daColecao<T>(nome: string): T[] {
     return Object.keys(docs)
       .filter((caminho) => caminho.startsWith(nome + '/'))
-      .map((caminho) => docs[caminho] as T)
+      .map((caminho) => ({ ...docs[caminho], id: caminho.slice(nome.length + 1) }) as T)
   }
 
   function ouvir(avisar: () => void) {
@@ -58,6 +58,9 @@ export function criarRepoLocal(armazem: Armazem = armazemDoNavegador): Repositor
     async importar(novos) {
       novos.forEach((d) => (docs[d.caminho] = d.dados))
       mudou()
+    },
+    async lerTudo() {
+      return Object.entries(docs).map(([caminho, dados]) => ({ caminho, dados }))
     },
   }
 }

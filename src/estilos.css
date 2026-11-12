@@ -911,3 +911,188 @@ summary {
     font-size: 0.8125rem;
   }
 }
+
+/* ---------- Etapas 3 e 4: investimentos, metas e listas ---------- */
+
+:root {
+  /* Cores de categoria validadas, em ordem fixa: Reserva, Carro, Apê, Convexo, A alocar. */
+  --cor-1: #2a78d6;
+  --cor-2: #eb6834;
+  --cor-3: #1baf7a;
+  --cor-4: #eda100;
+  --cor-5: #e87ba4;
+}
+
+.cor-1 { background: var(--cor-1); }
+.cor-2 { background: var(--cor-2); }
+.cor-3 { background: var(--cor-3); }
+.cor-4 { background: var(--cor-4); }
+.cor-5 { background: var(--cor-5); }
+
+.visoes.quatro {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.visoes.cinco {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.visoes.quatro button,
+.visoes.cinco button {
+  font-size: 0.875rem;
+}
+
+.bloco.sem-linha {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.status {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 999px;
+}
+
+.status-ok {
+  color: var(--verde);
+  background: var(--verde-claro);
+}
+
+.status-aviso {
+  color: var(--ambar);
+  background: var(--ambar-claro);
+}
+
+.status-critico {
+  color: #fff;
+  background: var(--vermelho);
+}
+
+.status-neutro {
+  color: var(--tinta-2);
+  background: var(--linha);
+}
+
+.pilha {
+  display: flex;
+  gap: 2px;
+  height: 0.75rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.pilha span {
+  min-width: 3px;
+  border-radius: 2px;
+}
+
+.composicao li {
+  display: grid;
+  grid-template-columns: 0.75rem 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  font-size: 0.9375rem;
+}
+
+.composicao small {
+  color: var(--tinta-2);
+}
+
+.marca-cor {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+}
+
+.posicoes li {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--linha);
+}
+
+.posicao-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.posicao-topo .texto {
+  min-height: 2rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.posicoes .campo {
+  max-width: 14rem;
+  margin-top: 0.4rem;
+}
+
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+select {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 0.25rem;
+  padding: 0 0.5rem;
+  font: inherit;
+  color: var(--tinta);
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+}
+
+.marcar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--tinta);
+}
+
+.marcar input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--verde);
+}
+
+.itens li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid var(--linha);
+}
+
+.itens small {
+  color: var(--tinta-2);
+}
+
+.mes-historico::first-letter {
+  text-transform: uppercase;
+}
+
+.razao a,
+.bloco a {
+  color: var(--verde);
+}
+
+.razao .apoio {
+  overflow-wrap: anywhere;
+}
+
+.tabela .campo input {
+  min-height: 2.5rem;
+  margin: 0;
+  text-align: right;
+}

@@ -29,3 +29,8 @@ export function nomeDoMes(mes: string): string {
 export function diaMes(data: string): string {
   return `${data.slice(8, 10)}/${data.slice(5, 7)}`
 }
+
+/** "2027-04-30" -> "30/04/2027" */
+export function dataBr(data: string): string {
+  return `${data.slice(8, 10)}/${data.slice(5, 7)}/${data.slice(0, 4)}`
+}

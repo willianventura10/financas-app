@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
   query,
   setDoc,
@@ -10,6 +11,8 @@ import {
   type Firestore,
 } from 'firebase/firestore'
 import type { Lancamento, Repositorio } from './tipos'
+
+const COLECOES = ['lancamentos', 'meses', 'config', 'viagens', 'posicoes', 'operacoes', 'historico', 'listas']
 
 /** Dados de um usuário ficam em users/{uid}/..., e a regra do banco só libera esse caminho ao próprio usuário. */
 export function criarRepoFirestore(db: Firestore, uid: string): Repositorio {
@@ -29,7 +32,7 @@ export function criarRepoFirestore(db: Firestore, uid: string): Repositorio {
       )
     },
     ouvirColecao<T>(nome: string, aoMudar: (docs: T[]) => void) {
-      return onSnapshot(colecao(nome), (foto) => aoMudar(foto.docs.map((d) => d.data() as T)))
+      return onSnapshot(colecao(nome), (foto) => aoMudar(foto.docs.map((d) => ({ ...d.data(), id: d.id }) as T)))
     },
     gravar: (caminho, dados) => setDoc(documento(caminho), dados),
     excluir: (caminho) => deleteDoc(documento(caminho)),
@@ -40,6 +43,10 @@ export function criarRepoFirestore(db: Firestore, uid: string): Repositorio {
         docs.slice(i, i + 400).forEach((d) => lote.set(documento(d.caminho), d.dados))
         await lote.commit()
       }
+    },
+    async lerTudo() {
+      const fotos = await Promise.all(COLECOES.map((nome) => getDocs(colecao(nome))))
+      return fotos.flatMap((foto, i) => foto.docs.map((d) => ({ caminho: `${COLECOES[i]}/${d.id}`, dados: d.data() })))
     },
   }
 }

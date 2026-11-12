@@ -1,0 +1,661 @@
+/* Livro-caixa: linhas finas, números tabulares à direita, tinta verde como único destaque. */
+:root {
+  --fundo: #f2f5f3;
+  --papel: #ffffff;
+  --tinta: #16211c;
+  --tinta-2: #55635c;
+  --linha: #d8dfdb;
+  --verde: #0e5c45;
+  --verde-claro: #e1eee8;
+  --ambar: #8a5d0b;
+  --ambar-claro: #f8ecd2;
+  --vermelho: #b3261e;
+  --raio: 10px;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--tinta);
+  background: var(--fundo);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+p,
+ul,
+fieldset {
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  list-style: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  background: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--verde);
+  outline-offset: 2px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.apoio {
+  color: var(--tinta-2);
+  font-size: 0.875rem;
+}
+
+.abrindo {
+  padding: 3rem 1.25rem;
+  color: var(--tinta-2);
+}
+
+/* ---------- Estrutura ---------- */
+
+.app {
+  min-height: 100dvh;
+  padding-bottom: 5.5rem; /* espaço da barra inferior */
+}
+
+.conteudo {
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+main {
+  padding: 0 1.25rem 2rem;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap; /* em tela estreita, o estado da sincronização desce para a linha de baixo */
+  gap: 0.25rem 0.75rem;
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+.seletor-mes {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: -0.75rem; /* alinha a seta com a margem do conteúdo */
+}
+
+.seletor-mes h1 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  min-width: 9.25rem;
+  text-align: center;
+}
+
+.seletor-mes h1::first-letter {
+  text-transform: uppercase;
+}
+
+.seletor-mes button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--verde);
+}
+
+.seletor-mes button:hover {
+  background: var(--verde-claro);
+}
+
+.sync {
+  font-size: 0.8125rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.sync-ok {
+  color: var(--verde);
+  background: var(--verde-claro);
+}
+
+.sync-neutro {
+  color: var(--tinta-2);
+  background: var(--linha);
+}
+
+.sync-aviso {
+  color: var(--ambar);
+  background: var(--ambar-claro);
+}
+
+.faixa {
+  margin: 0 1.25rem 1rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.875rem;
+  color: var(--ambar);
+  background: var(--ambar-claro);
+  border-radius: 6px;
+}
+
+/* ---------- Navegação: barra inferior no celular ---------- */
+
+.navegacao {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
+  background: var(--papel);
+  border-top: 1px solid var(--linha);
+}
+
+.marca {
+  display: none;
+}
+
+.navegacao svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.aba,
+.lancar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 3rem;
+  font-size: 0.6875rem;
+  color: var(--tinta-2);
+}
+
+.aba[aria-current='page'] {
+  color: var(--verde);
+  font-weight: 600;
+}
+
+.lancar {
+  color: var(--verde);
+  font-weight: 600;
+}
+
+.lancar svg {
+  width: 3rem;
+  height: 3rem;
+  margin-top: -1.4rem;
+  padding: 0.7rem;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--verde);
+  stroke-width: 2.25;
+  box-shadow: 0 0 0 4px var(--papel);
+}
+
+/* ---------- Início ---------- */
+
+.total-mes {
+  padding: 0.75rem 0 1.5rem;
+}
+
+.total-mes h2 {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
+.valor-grande {
+  font-size: clamp(2.5rem, 11vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.razao li {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--linha);
+}
+
+.linha-razao {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.barra {
+  height: 4px;
+  margin-top: 0.4rem;
+  background: var(--linha);
+  border-radius: 2px;
+}
+
+.barra span {
+  display: block;
+  height: 100%;
+  background: var(--verde);
+  border-radius: 2px;
+}
+
+.razao .apoio {
+  margin-top: 0.3rem;
+}
+
+/* ---------- Gastos ---------- */
+
+.lancamentos li {
+  border-top: 1px solid var(--linha);
+}
+
+.lancamentos button {
+  display: grid;
+  grid-template-columns: 3.75rem 1fr auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 0;
+  text-align: left;
+}
+
+.lancamentos button:hover {
+  background: var(--verde-claro);
+}
+
+.quando {
+  font-size: 0.875rem;
+  color: var(--tinta-2);
+}
+
+.oque small {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--tinta-2);
+}
+
+.soma {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.8rem 0;
+  font-weight: 600;
+  border-top: 2px solid var(--tinta);
+}
+
+/* ---------- Estados vazios e "Mais" ---------- */
+
+.vazio {
+  padding: 2.5rem 0;
+}
+
+.vazio h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.vazio p {
+  color: var(--tinta-2);
+}
+
+.mais h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--linha);
+}
+
+.mais h2:first-child {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.mais p {
+  color: var(--tinta-2);
+  max-width: 34rem;
+}
+
+.mais button {
+  margin-top: 0.75rem;
+}
+
+.mais > .apoio {
+  margin-top: 2rem;
+}
+
+/* ---------- Botões e campos ---------- */
+
+.primario,
+.perigo {
+  min-height: 3rem;
+  padding: 0 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.primario {
+  color: #fff;
+  background: var(--verde);
+}
+
+.primario:disabled {
+  opacity: 0.6;
+}
+
+.perigo {
+  color: var(--vermelho);
+  border: 1px solid currentColor;
+}
+
+.texto {
+  min-height: 2.75rem;
+  color: var(--verde);
+  font-weight: 500;
+}
+
+label,
+legend {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--tinta-2);
+}
+
+input:not([type='radio']) {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 0.25rem;
+  padding: 0 0.75rem;
+  color: var(--tinta);
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+}
+
+.erro {
+  color: var(--vermelho);
+  font-size: 0.9375rem;
+}
+
+/* ---------- Folha de lançamento ---------- */
+
+.folha-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(22 33 28 / 0.45);
+}
+
+.folha {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 100dvh;
+  overflow-y: auto;
+  padding: 1rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+  background: var(--fundo);
+  border-radius: var(--raio) var(--raio) 0 0;
+}
+
+.folha-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.folha-topo h2 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.campo-valor span {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--tinta-2);
+  border-bottom: 2px solid var(--verde);
+}
+
+.campo-valor input:not([type='radio']) {
+  min-height: 3.75rem;
+  margin: 0;
+  padding: 0;
+  font-size: 2.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+}
+
+.categorias {
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.categorias legend {
+  margin-bottom: 0.5rem;
+}
+
+.categorias label {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--tinta);
+}
+
+.categorias input {
+  position: absolute;
+  opacity: 0;
+}
+
+.categorias span {
+  display: block;
+  padding: 0.55rem 0.85rem;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+}
+
+.categorias input:checked + span {
+  color: #fff;
+  font-weight: 500;
+  background: var(--verde);
+  border-color: var(--verde);
+}
+
+.categorias input:focus-visible + span {
+  outline: 2px solid var(--verde);
+  outline-offset: 2px;
+}
+
+.dupla {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  gap: 0.75rem;
+}
+
+.folha-acoes {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.folha-acoes .primario {
+  flex: 1;
+}
+
+/* ---------- Aviso com desfazer ---------- */
+
+.aviso {
+  position: fixed;
+  inset: auto 1rem 6.25rem 1rem;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  color: #fff;
+  background: var(--tinta);
+  border-radius: 8px;
+}
+
+.aviso button {
+  min-height: 2.5rem;
+  padding: 0 0.75rem;
+  font-weight: 600;
+  color: #9fe0c6;
+}
+
+/* ---------- Login ---------- */
+
+.login {
+  display: grid;
+  gap: 1rem;
+  max-width: 22rem;
+  margin: 0 auto;
+  padding: 18vh 1.25rem 2rem;
+}
+
+.login h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--verde);
+}
+
+.nota {
+  font-size: 0.875rem;
+  color: var(--tinta-2);
+}
+
+/* ---------- Computador: menu lateral e folha centralizada ---------- */
+
+@media (min-width: 900px) {
+  .app {
+    display: grid;
+    grid-template-columns: 14rem 1fr;
+    padding-bottom: 0;
+  }
+
+  .navegacao {
+    position: sticky;
+    top: 0;
+    inset: 0 auto auto 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    padding: 1.25rem 0.75rem;
+    border-top: 0;
+    border-right: 1px solid var(--linha);
+  }
+
+  .marca {
+    display: block;
+    padding: 0 0.75rem 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--verde);
+  }
+
+  .aba,
+  .lancar {
+    flex-direction: row;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    font-size: 0.9375rem;
+    border-radius: 8px;
+  }
+
+  .aba:hover {
+    background: var(--fundo);
+  }
+
+  .aba[aria-current='page'] {
+    background: var(--verde-claro);
+  }
+
+  .lancar {
+    order: 1; /* depois das quatro áreas */
+    margin-top: 1rem;
+    justify-content: center;
+    color: #fff;
+    background: var(--verde);
+  }
+
+  .lancar svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .conteudo {
+    width: 100%;
+    max-width: 52rem;
+    padding: 1rem 1.5rem;
+  }
+
+  .folha-fundo {
+    align-items: center;
+  }
+
+  .folha {
+    border-radius: var(--raio);
+    padding: 1.5rem;
+  }
+
+  .aviso {
+    inset: auto 1.5rem 1.5rem auto;
+    width: 24rem;
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .barra span {
+    transition: width 0.3s ease;
+  }
+}

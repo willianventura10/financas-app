@@ -1,0 +1,8 @@
+node_modules
+dist
+dev-dist
+.firebase
+*.log
+# Dados pessoais nunca entram no repositório.
+carga-inicial*.json
+*.xlsx

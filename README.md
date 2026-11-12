@@ -5,7 +5,7 @@ Aplicativo web instalável para gastos e investimentos da casa. Substitui as pla
 
 - **App:** React + TypeScript, instalável (PWA), funciona sem internet.
 - **Dados e login:** Firebase (Firestore com cache offline e Authentication por e-mail e senha).
-- **Publicação:** a cada alteração na `main`, o GitHub Actions roda os testes, gera o build e publica no Firebase Hosting.
+- **Publicação:** a cada alteração na `main`, o GitHub Actions roda os testes, gera o build e publica no GitHub Pages.
 
 ## Comandos
 
@@ -20,9 +20,10 @@ npm run build   # gera a versão publicada em dist/
 
 1. `src/firebase-config.ts` recebe o bloco `firebaseConfig` do console do Firebase. Enquanto
    estiver `null`, o app roda em modo local, sem login e sem sincronização.
-2. `.firebaserc` aponta o projeto. Sem esse arquivo, o GitHub Actions testa mas não publica.
-3. O segredo `FIREBASE_SERVICE_ACCOUNT`, no GitHub, guarda a chave de publicação.
-4. `firestore.rules` é colado no console do Firestore, na aba Regras.
+2. No GitHub, em Settings > Pages, a origem é "GitHub Actions".
+3. `firestore.rules` é colado no console do Firestore, na aba Regras.
+
+O código é público. Dados pessoais ficam só no Firebase, atrás do login.
 
 ## Onde ficam os dados
 

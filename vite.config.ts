@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // O GitHub Pages publica o app em /financas-app/, e não na raiz do endereço.
+  base: '/financas-app/',
   define: { __VERSAO__: JSON.stringify(process.env.npm_package_version ?? 'dev') },
   plugins: [
     react(),
@@ -14,7 +16,6 @@ export default defineConfig({
         short_name: 'Finanças',
         description: 'Gastos e investimentos da casa',
         lang: 'pt-BR',
-        start_url: '/',
         display: 'standalone',
         background_color: '#f2f5f3',
         theme_color: '#0e5c45',
@@ -26,7 +27,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        navigateFallback: '/index.html',
       },
     }),
   ],

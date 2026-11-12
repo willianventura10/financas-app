@@ -323,32 +323,6 @@ main {
   color: var(--tinta-2);
 }
 
-.mais h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 1.5rem 0 0.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--linha);
-}
-
-.mais h2:first-child {
-  margin-top: 0;
-  border-top: 0;
-}
-
-.mais p {
-  color: var(--tinta-2);
-  max-width: 34rem;
-}
-
-.mais button {
-  margin-top: 0.75rem;
-}
-
-.mais > .apoio {
-  margin-top: 2rem;
-}
-
 /* ---------- Botões e campos ---------- */
 
 .primario,
@@ -657,5 +631,283 @@ input:not([type='radio']) {
 @media (prefers-reduced-motion: no-preference) {
   .barra span {
     transition: width 0.3s ease;
+  }
+}
+
+/* ---------- Etapa 2: blocos, campos, comparativos e tabelas ---------- */
+
+:root {
+  /* Par validado para duas séries: referência (meta, previsto) e realizado (média, acumulado). */
+  --graf-ref: #d08a1e;
+  --graf-real: #2a8c6a;
+}
+
+.bloco {
+  padding: 1rem 0 1.25rem;
+  border-top: 1px solid var(--linha);
+}
+
+.bloco > h2,
+.atencao > h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.bloco > p {
+  max-width: 34rem;
+  margin-bottom: 0.75rem;
+}
+
+.resultado {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+}
+
+.resultado.forte {
+  font-weight: 600;
+}
+
+.alerta {
+  color: var(--vermelho);
+}
+
+.apoio.alerta {
+  font-weight: 500;
+}
+
+.barra.acima span {
+  background: var(--vermelho);
+}
+
+.barra span {
+  background: var(--graf-real);
+}
+
+.atencao {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--ambar-claro);
+  border-radius: 6px;
+}
+
+.atencao > h2 {
+  margin-bottom: 0.25rem;
+  color: var(--ambar);
+}
+
+.atencao li + li {
+  margin-top: 0.25rem;
+}
+
+.visoes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 1rem;
+  padding: 3px;
+  background: var(--linha);
+  border-radius: 8px;
+}
+
+.visoes button {
+  min-height: 2.5rem;
+  border-radius: 6px;
+  color: var(--tinta-2);
+}
+
+.visoes button[aria-selected='true'] {
+  color: var(--tinta);
+  font-weight: 600;
+  background: var(--papel);
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  align-items: end;
+}
+
+.campo small {
+  display: block;
+  margin-top: 0.2rem;
+  font-weight: 400;
+}
+
+.campo input[aria-invalid] {
+  border-color: var(--vermelho);
+}
+
+details {
+  margin-bottom: 0.75rem;
+}
+
+summary {
+  min-height: 2.5rem;
+  color: var(--verde);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.secundario {
+  min-height: 3rem;
+  padding: 0 1rem;
+  color: var(--verde);
+  font-weight: 600;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+}
+
+.contas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+}
+
+.contas label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--tinta);
+}
+
+.contas input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--verde);
+}
+
+.notas li {
+  padding: 0.3rem 0;
+  font-size: 0.9375rem;
+  white-space: pre-line;
+}
+
+.legenda {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--tinta-2);
+}
+
+.legenda .serie {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.legenda .serie + .serie,
+.legenda .serie:not(:first-child) {
+  margin-left: 0.75rem;
+}
+
+.serie {
+  display: inline-block;
+  height: 0.5rem;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+}
+
+.serie.ref {
+  background: var(--graf-ref);
+}
+
+.serie.real {
+  background: var(--graf-real);
+}
+
+.comparativo li {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--linha);
+}
+
+.par {
+  display: grid;
+  grid-template-columns: 1fr 6rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2px;
+  font-size: 0.875rem;
+}
+
+.par .num {
+  text-align: right;
+}
+
+.tabela {
+  width: 100%;
+  margin-top: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.tabela th {
+  font-weight: 500;
+  color: var(--tinta-2);
+  text-align: right;
+}
+
+.tabela th:first-child,
+.tabela td:first-child {
+  text-align: left;
+}
+
+.tabela td,
+.tabela th {
+  padding: 0.4rem 0.35rem;
+  border-top: 1px solid var(--linha);
+  text-align: right;
+}
+
+.tabela td:first-child::first-letter {
+  text-transform: uppercase;
+}
+
+.tabela tfoot td {
+  font-weight: 600;
+  border-top: 2px solid var(--tinta);
+}
+
+.so-largo {
+  display: none;
+}
+
+.viagens li {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--linha);
+}
+
+.viagens small {
+  color: var(--tinta-2);
+}
+
+.viagens .apoio {
+  white-space: pre-line;
+}
+
+.mais .bloco:first-child {
+  border-top: 0;
+}
+
+.mais .bloco button {
+  margin: 0.25rem 0 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .so-largo {
+    display: block;
+  }
+
+  .conteudo {
+    max-width: 68rem;
+  }
+
+  .tabela {
+    font-size: 0.8125rem;
   }
 }

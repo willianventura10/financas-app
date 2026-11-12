@@ -3,7 +3,8 @@ import { onAuthStateChanged, type User } from 'firebase/auth'
 import { firebase } from './firebase'
 import { criarRepoFirestore } from './dados/repoFirestore'
 import { criarRepoLocal } from './dados/repoLocal'
-import type { EstadoSync, Lancamento } from './dados/tipos'
+import type { Config, EstadoSync, Lancamento, MesDoc, Viagem } from './dados/tipos'
+import { mesVazio } from './lib/calculos'
 import { hoje, mesDe, nomeDoMes, somarMes } from './lib/datas'
 import { Login } from './telas/Login'
 import { Inicio } from './telas/Inicio'
@@ -48,19 +49,32 @@ function Principal({ usuario }: { usuario: User | null }) {
 
   const [aba, setAba] = useState<Aba>('inicio')
   const [mes, setMes] = useState(() => mesDe(hoje()))
-  const [itens, setItens] = useState<Lancamento[] | null>(null)
+  const [itensDoAno, setItensDoAno] = useState<Lancamento[] | null>(null)
   const [estado, setEstado] = useState<EstadoSync>({ pendente: false, doCache: false })
+  const [meses, setMeses] = useState<MesDoc[]>([])
+  const [config, setConfig] = useState<Config | null>(null)
+  const [viagens, setViagens] = useState<Viagem[]>([])
   const [editor, setEditor] = useState<'novo' | Lancamento | null>(null)
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const conectado = useConectado()
+  const ano = mes.slice(0, 4)
 
   useEffect(() => {
-    setItens(null)
-    return repo.ouvirLancamentos(mes, (novos, novoEstado) => {
-      setItens(novos)
+    setItensDoAno(null)
+    return repo.ouvirLancamentos(ano, (novos, novoEstado) => {
+      setItensDoAno(novos)
       setEstado(novoEstado)
     })
-  }, [repo, mes])
+  }, [repo, ano])
+
+  useEffect(() => {
+    const parar = [
+      repo.ouvirColecao<MesDoc>('meses', setMeses),
+      repo.ouvirColecao<Config>('config', (docs) => setConfig(docs[0] ?? null)),
+      repo.ouvirColecao<Viagem>('viagens', setViagens),
+    ]
+    return () => parar.forEach((p) => p())
+  }, [repo])
 
   useEffect(() => {
     if (!aviso) return
@@ -68,25 +82,46 @@ function Principal({ usuario }: { usuario: User | null }) {
     return () => clearTimeout(t)
   }, [aviso])
 
+  const itens = useMemo(() => itensDoAno?.filter((l) => l.mes === mes) ?? null, [itensDoAno, mes])
+  const mesDoc = meses.find((m) => m.mes === mes) ?? mesVazio(mes)
+
   const falhou = () => setAviso({ texto: 'Não foi possível gravar. Tente de novo.' })
+  const gravar = (caminho: string, dados: object) => void repo.gravar(caminho, dados).catch(falhou)
 
   function salvar(l: Lancamento, anterior?: Lancamento) {
-    repo.salvarLancamento(l).catch(falhou)
+    gravar(`lancamentos/${l.id}`, l)
     setEditor(null)
     const onde = l.mes === mes ? '' : ` em ${nomeDoMes(l.mes)}`
     setAviso({
       texto: (anterior ? 'Gasto alterado' : 'Gasto salvo') + onde,
-      desfazer: () => {
-        const volta = anterior ? repo.salvarLancamento(anterior) : repo.excluirLancamento(l.id)
-        volta.catch(falhou)
-      },
+      desfazer: () =>
+        anterior
+          ? gravar(`lancamentos/${l.id}`, anterior)
+          : void repo.excluir(`lancamentos/${l.id}`).catch(falhou),
     })
   }
 
-  function excluir(l: Lancamento) {
-    repo.excluirLancamento(l.id).catch(falhou)
+  function excluir(caminho: string, dados: object, texto: string) {
+    repo.excluir(caminho).catch(falhou)
     setEditor(null)
-    setAviso({ texto: 'Gasto excluído', desfazer: () => void repo.salvarLancamento(l).catch(falhou) })
+    setAviso({ texto, desfazer: () => gravar(caminho, dados) })
+  }
+
+  /** O "Cartão atualizado" de um mês vira um lançamento de Cartão no mês seguinte. */
+  function lancarCartao(valor: number) {
+    const proximo = somarMes(mes, 1)
+    const agora = Date.now()
+    // Código fixo por mês: repetir o botão substitui o lançamento, em vez de duplicar.
+    salvar({
+      id: `cartao-${mes}`,
+      mes: proximo,
+      data: `${proximo}-01`,
+      valor,
+      categoria: 'cartao',
+      obs: `Fatura de ${nomeDoMes(mes)}`,
+      criadoEm: agora,
+      editadoEm: agora,
+    })
   }
 
   const sync = !firebase
@@ -142,20 +177,39 @@ function Principal({ usuario }: { usuario: User | null }) {
           </span>
         </header>
 
-        {!firebase && (
-          <p className="faixa">Modo local: os dados ficam só neste aparelho, até o Firebase ser configurado.</p>
-        )}
+        {!firebase && <p className="faixa">Modo local: os dados ficam só neste aparelho.</p>}
 
         <main>
-          {aba === 'inicio' && <Inicio itens={itens} mes={mes} />}
-          {aba === 'gastos' && <Gastos itens={itens} mes={mes} aoAbrir={setEditor} />}
+          {aba === 'inicio' && <Inicio itens={itens} mes={mes} mesDoc={mesDoc} config={config} />}
+          {aba === 'gastos' && (
+            <Gastos
+              itens={itens}
+              itensDoAno={itensDoAno ?? []}
+              mes={mes}
+              mesDoc={mesDoc}
+              meses={meses}
+              config={config}
+              aoAbrir={setEditor}
+              aoGravarMes={(m) => gravar(`meses/${m.mes}`, m)}
+              aoLancarCartao={lancarCartao}
+            />
+          )}
           {aba === 'invest' && (
             <section className="vazio">
               <h2>Investimentos chegam na etapa 3</h2>
               <p>Painel, posições, compras e vendas, histórico e sugestão de aporte entram aqui.</p>
             </section>
           )}
-          {aba === 'mais' && <Mais email={usuario?.email ?? null} />}
+          {aba === 'mais' && (
+            <Mais
+              email={usuario?.email ?? null}
+              viagens={viagens}
+              caixinhaViagem={meses.filter((m) => m.mes.startsWith(ano)).reduce((s, m) => s + m.caixinhaViagem, 0)}
+              aoGravar={gravar}
+              aoExcluir={excluir}
+              aoImportar={(docs) => repo.importar(docs)}
+            />
+          )}
         </main>
       </div>
 
@@ -163,7 +217,7 @@ function Principal({ usuario }: { usuario: User | null }) {
         <Lancar
           inicial={editor === 'novo' ? undefined : editor}
           aoSalvar={salvar}
-          aoExcluir={excluir}
+          aoExcluir={(l) => excluir(`lancamentos/${l.id}`, l, 'Gasto excluído')}
           aoFechar={() => setEditor(null)}
         />
       )}

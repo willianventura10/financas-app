@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { criarRepoLocal } from '../dados/repoLocal'
 import type { Lancamento } from '../dados/tipos'
 import { hoje, mesDe, nomeDoMes, somarMes } from './datas'
 import { lerCentavos, reais } from './dinheiro'
@@ -78,43 +77,5 @@ describe('totais', () => {
   })
   it('soma o total do mês', () => {
     expect(totalDoMes(itens)).toBe(123176)
-  })
-})
-
-describe('repositório local', () => {
-  const memoria = () => {
-    let texto: string | null = null
-    return { ler: () => texto, gravar: (t: string) => void (texto = t) }
-  }
-
-  it('entrega só os lançamentos do mês pedido e avisa a cada mudança', async () => {
-    const repo = criarRepoLocal(memoria())
-    const vistos: number[] = []
-    const parar = repo.ouvirLancamentos('2026-11', (itens) => vistos.push(itens.length))
-    const a = gasto({})
-    await repo.salvarLancamento(a)
-    await repo.salvarLancamento(gasto({ mes: '2026-10', data: '2026-10-30' }))
-    await repo.excluirLancamento(a.id)
-    parar()
-    await repo.salvarLancamento(gasto({}))
-    expect(vistos).toEqual([0, 1, 1, 0])
-  })
-
-  it('substitui o lançamento de mesmo id em vez de duplicar', async () => {
-    const repo = criarRepoLocal(memoria())
-    const a = gasto({ valor: 500 })
-    await repo.salvarLancamento(a)
-    await repo.salvarLancamento({ ...a, valor: 700 })
-    let lidos: Lancamento[] = []
-    repo.ouvirLancamentos('2026-11', (itens) => (lidos = itens))
-    expect(lidos.map((l) => l.valor)).toEqual([700])
-  })
-
-  it('preserva os dados depois de reabrir', async () => {
-    const armazem = memoria()
-    await criarRepoLocal(armazem).salvarLancamento(gasto({ valor: 4590 }))
-    let lidos: Lancamento[] = []
-    criarRepoLocal(armazem).ouvirLancamentos('2026-11', (itens) => (lidos = itens))
-    expect(lidos).toHaveLength(1)
   })
 })

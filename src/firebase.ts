@@ -19,7 +19,8 @@ function iniciar(config: NonNullable<typeof firebaseConfig>) {
   return { auth: getAuth(app), db }
 }
 
-export const firebase = firebaseConfig ? iniciar(firebaseConfig) : null
+// VITE_MODO_LOCAL=1 gera uma versão sem login nem Firebase, usada para conferir as telas com dados locais.
+export const firebase = firebaseConfig && !import.meta.env.VITE_MODO_LOCAL ? iniciar(firebaseConfig) : null
 
 /** Encerra a sessão e apaga a cópia dos dados guardada neste aparelho. */
 export async function sairELimpar() {

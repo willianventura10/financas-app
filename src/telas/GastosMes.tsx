@@ -1,0 +1,134 @@
+import { CampoValor, Resultado } from '../componentes'
+import type { Cartao, Config, Lancamento, MesDoc } from '../dados/tipos'
+import { CARTAO_VAZIO, resumoDoCartao, resumoDoMes } from '../lib/calculos'
+import { nomeDoMes, somarMes } from '../lib/datas'
+
+interface Props {
+  itens: Lancamento[]
+  mesDoc: MesDoc
+  config: Config
+  aoGravar: (mes: MesDoc) => void
+  aoLancarCartao: (valor: number) => void
+}
+
+/** Renda e destinações, contas pagas e conciliação do cartão: as linhas 35 a 67 da aba Mensal. */
+export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: Props) {
+  const resumo = resumoDoMes(itens, mesDoc, config)
+  const cartao = mesDoc.cartao ?? CARTAO_VAZIO
+  const fatura = resumoDoCartao(itens, cartao)
+  const numeroDoMes = Number(mesDoc.mes.slice(5, 7))
+  const contas = config.contas.filter((c) => !c.meses || c.meses.includes(numeroDoMes))
+
+  const mudar = (parte: Partial<MesDoc>) => aoGravar({ ...mesDoc, ...parte })
+  const mudarCartao = (parte: Partial<Cartao>) => mudar({ cartao: { ...cartao, ...parte } })
+  const campo = (rotulo: string, chave: 'extra' | 'social' | 'cartaoElis' | 'poupado' | 'poupViagem') => (
+    <CampoValor rotulo={rotulo} valor={mesDoc[chave]} aoMudar={(v) => mudar({ [chave]: v ?? 0 })} />
+  )
+
+  return (
+    <>
+      <section className="bloco">
+        <h2>Renda e destinações</h2>
+        <div className="grade">
+          <CampoValor rotulo="CVM" valor={mesDoc.cvm} aoMudar={(v) => mudar({ cvm: v })} />
+          {campo('Extra', 'extra')}
+          {campo('Social', 'social')}
+          {campo('Cartão Elis', 'cartaoElis')}
+          {campo('Poupado', 'poupado')}
+          {campo('Poup. viagem', 'poupViagem')}
+          <CampoValor
+            rotulo="Caixinha de viagem no mês"
+            valor={mesDoc.caixinhaViagem}
+            aoMudar={(v) => mudar({ caixinhaViagem: v ?? 0 })}
+            negativo
+            ajuda="Poup. viagem menos o gasto da viagem do mês."
+          />
+        </div>
+        <Resultado rotulo="Gasto no mês" valor={resumo.total} />
+        <Resultado rotulo="Flutuável líquido" valor={resumo.flutuavel} forte />
+      </section>
+
+      <section className="bloco">
+        <h2>Contas do mês</h2>
+        <ul className="contas">
+          {contas.map((c) => (
+            <li key={c.nome}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={!!mesDoc.contas[c.nome]}
+                  onChange={(e) => mudar({ contas: { ...mesDoc.contas, [c.nome]: e.target.checked } })}
+                />
+                {c.nome}
+              </label>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="bloco">
+        <h2>Cartão</h2>
+        <div className="grade">
+          <CampoValor rotulo="Fatura" valor={cartao.fatura} aoMudar={(v) => mudarCartao({ fatura: v })} />
+          {cartao.semanas.map((valor, i) => (
+            <CampoValor
+              key={i}
+              rotulo={`Alimentação, semana ${i + 1}`}
+              valor={valor}
+              aoMudar={(v) => mudarCartao({ semanas: cartao.semanas.map((s, j) => (j === i ? (v ?? 0) : s)) })}
+            />
+          ))}
+          <CampoValor
+            rotulo="Saúde, academia e celular"
+            valor={cartao.saudeAcademia}
+            aoMudar={(v) => mudarCartao({ saudeAcademia: v ?? 0 })}
+          />
+        </div>
+        <details>
+          <summary>Ajustes manuais</summary>
+          <div className="grade">
+            <CampoValor
+              rotulo="Em uber, viagens e saídas"
+              valor={cartao.ajusteUber}
+              aoMudar={(v) => mudarCartao({ ajusteUber: v ?? 0 })}
+              negativo
+            />
+            <CampoValor
+              rotulo="No total a abater"
+              valor={cartao.ajusteAbater}
+              aoMudar={(v) => mudarCartao({ ajusteAbater: v ?? 0 })}
+              negativo
+            />
+            <CampoValor
+              rotulo="Na fatura"
+              valor={cartao.ajusteFatura}
+              aoMudar={(v) => mudarCartao({ ajusteFatura: v ?? 0 })}
+              negativo
+            />
+          </div>
+        </details>
+        <Resultado rotulo="Uber, viagens e saídas" valor={fatura.uber} />
+        <Resultado rotulo="Abater deste mês" valor={fatura.abater} />
+        <Resultado rotulo="Cartão atualizado" valor={fatura.atualizado} forte />
+        {fatura.atualizado !== null && (
+          <button className="secundario" onClick={() => aoLancarCartao(fatura.atualizado!)}>
+            Lançar em Cartão de {nomeDoMes(somarMes(mesDoc.mes, 1))}
+          </button>
+        )}
+      </section>
+
+      {mesDoc.notas && mesDoc.notas.length > 0 && (
+        <section className="bloco">
+          <h2>Notas da planilha</h2>
+          <ul className="notas">
+            {mesDoc.notas.map((n, i) => (
+              <li key={i}>
+                <strong>{n.onde}:</strong> {n.texto}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  )
+}

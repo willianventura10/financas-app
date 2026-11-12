@@ -32,7 +32,7 @@ Planilhas e arquivos de carga inicial nunca entram no repositório (ver `.gitign
 
 ## Etapas
 
-1. Base: login, sincronização, modo offline, lançar gasto. **(atual)**
-2. Dados e Gastos: carga inicial, metas, mês, ano, contas, cartão, viagens.
+1. Base: login, sincronização, modo offline, lançar gasto. **(feita)**
+2. Dados e Gastos: carga inicial, metas, mês, ano, contas, cartão, viagens. **(feita)**
 3. Investimentos: painel, posições, compras e vendas, histórico, sugestão de aporte, cotações.
 4. Mais: metas e parâmetros, listas, fechar o mês, exportar e restaurar backup.

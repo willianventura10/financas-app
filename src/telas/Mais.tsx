@@ -4,8 +4,9 @@ import type { Config, DocParaImportar, Lista, Viagem } from '../dados/tipos'
 import { exportarBackup, exportarExcel } from '../lib/exportar'
 import { Listas } from './Listas'
 import { Metas } from './Metas'
-import { hoje, mesDe, nomeDoMes } from '../lib/datas'
-import { lerCentavos, reais } from '../lib/dinheiro'
+import { hoje, mesCurto, mesDe } from '../lib/datas'
+import { abatidoDaViagem } from '../lib/calculos'
+import { lerCentavos, numero, reais } from '../lib/dinheiro'
 import { firebase, sairELimpar } from '../firebase'
 import { useInstalar } from '../instalar'
 
@@ -123,19 +124,42 @@ function Viagens({ viagens, ano, caixinhaViagem, aoGravar, aoExcluir }: Props) {
   const [nome, setNome] = useState('')
   const [mes, setMes] = useState(mesDe(hoje()))
   const [gasto, setGasto] = useState('')
-  const [abater, setAbater] = useState(false)
+  const [abater, setAbater] = useState('')
+  const [obs, setObs] = useState('')
   const [erro, setErro] = useState('')
+  const [editando, setEditando] = useState<Viagem | null>(null)
   const ordenadas = viagens.filter((v) => v.mes.startsWith(ano)).sort((a, b) => b.mes.localeCompare(a.mes))
+
+  function limpar() {
+    setEditando(null)
+    setNome('')
+    setGasto('')
+    setAbater('')
+    setObs('')
+    setErro('')
+  }
+
+  function editar(v: Viagem) {
+    setEditando(v)
+    setNome(v.nome)
+    setMes(v.mes)
+    setGasto(numero(v.gasto))
+    setAbater(abatidoDaViagem(v) ? numero(abatidoDaViagem(v)) : '')
+    setObs(v.obs)
+    setErro('')
+  }
 
   function adicionar(e: FormEvent) {
     e.preventDefault()
     const valor = lerCentavos(gasto)
     if (!nome.trim() || !mes || !valor) return setErro('Preencha o nome, o mês e o gasto da viagem.')
-    const id = crypto.randomUUID()
-    aoGravar(`viagens/${id}`, { id, nome: nome.trim(), mes, gasto: valor, itens: [], obs: '', abater } satisfies Viagem)
-    setNome('')
-    setGasto('')
-    setErro('')
+    const abatido = abater.trim() ? lerCentavos(abater) : 0
+    if (abatido === null) return setErro('Confira o valor a abater da caixinha.')
+    if (abatido > valor) return setErro('O valor a abater não pode passar do gasto total.')
+    // "abater" é a forma antiga; ao salvar, a viagem passa a guardar só o valor abatido.
+    const { abater: _antigo, ...base } = editando ?? { id: crypto.randomUUID(), itens: [] }
+    aoGravar(`viagens/${base.id}`, { ...base, nome: nome.trim(), mes, gasto: valor, obs: obs.trim(), abatido } satisfies Viagem)
+    limpar()
   }
 
   return (
@@ -146,16 +170,18 @@ function Viagens({ viagens, ano, caixinhaViagem, aoGravar, aoExcluir }: Props) {
         {ordenadas.map((v) => (
           <li key={v.id}>
             <div className="linha-razao">
-              <span>
-                {v.nome} <small>{nomeDoMes(v.mes)}</small>
-              </span>
+              <span className="local">{v.nome}</span>
+              <small>Data: {mesCurto(v.mes)}</small>
               <span className="num">{reais(v.gasto)}</span>
             </div>
             {v.itens.length > 0 && (
               <p className="apoio">{v.itens.map((i) => `${i.nome} ${reais(i.valor)}`).join('; ')}</p>
             )}
             {v.obs && <p className="apoio">{v.obs}</p>}
-            {v.abater && <p className="apoio">Abatida da caixinha de viagem.</p>}
+            {abatidoDaViagem(v) > 0 && <p className="apoio">Abatido da caixinha: {reais(abatidoDaViagem(v))}</p>}
+            <button className="texto" onClick={() => editar(v)}>
+              Editar
+            </button>
             <button className="texto" onClick={() => aoExcluir(`viagens/${v.id}`, v, 'Viagem excluída')}>
               Excluir
             </button>
@@ -164,7 +190,7 @@ function Viagens({ viagens, ano, caixinhaViagem, aoGravar, aoExcluir }: Props) {
       </ul>
       <form className="grade" onSubmit={adicionar}>
         <label className="campo">
-          Nova viagem
+          {editando ? 'Editar viagem' : 'Nova viagem'}
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Destino" />
         </label>
         <label className="campo">
@@ -172,14 +198,28 @@ function Viagens({ viagens, ano, caixinhaViagem, aoGravar, aoExcluir }: Props) {
           <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
         </label>
         <label className="campo">
-          Gasto
+          Gasto total
           <input className="num" inputMode="decimal" value={gasto} onChange={(e) => setGasto(e.target.value)} placeholder="0,00" />
         </label>
-        <label className="marcar">
-          <input type="checkbox" checked={abater} onChange={(e) => setAbater(e.target.checked)} />
-          Abater da caixinha de viagem
+        <label className="campo">
+          Abater da caixinha
+          <input className="num" inputMode="decimal" value={abater} onChange={(e) => setAbater(e.target.value)} placeholder="0,00" />
         </label>
-        <button className="secundario">Adicionar viagem</button>
+        <label className="campo largo">
+          Anotações
+          <textarea
+            rows={5}
+            value={obs}
+            onChange={(e) => setObs(e.target.value)}
+            placeholder={'Hotel: 574,55 (2 diárias)\nÔnibus: 174,00'}
+          />
+        </label>
+        <button className="secundario">{editando ? 'Salvar alterações' : 'Adicionar viagem'}</button>
+        {editando && (
+          <button type="button" className="texto" onClick={limpar}>
+            Cancelar
+          </button>
+        )}
       </form>
       {erro && (
         <p className="erro" role="alert">

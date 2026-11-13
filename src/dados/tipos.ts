@@ -136,7 +136,9 @@ export interface Viagem {
   gasto: number
   itens: { nome: string; valor: number }[]
   obs: string
-  /** O gasto sai do saldo da caixinha de viagem. */
+  /** Quanto do gasto sai do saldo da caixinha de viagem; pode ser só uma parte. */
+  abatido?: number
+  /** Forma antiga: abatia o gasto inteiro. */
   abater?: boolean
 }
 

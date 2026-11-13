@@ -10,9 +10,14 @@ export function mesVazio(mes: string): MesDoc {
   return { mes, cvm: null, extra: 0, social: 0, cartaoElis: 0, poupado: 0, poupViagem: 0, contas: {} }
 }
 
-/** Saldo da caixinha de viagem: todo o Poup. viagem menos as viagens marcadas para abater, de todos os anos. */
+/** Quanto a viagem tirou da caixinha. */
+export function abatidoDaViagem(v: Viagem): number {
+  return v.abatido ?? (v.abater ? v.gasto : 0)
+}
+
+/** Saldo da caixinha de viagem: todo o Poup. viagem menos o que as viagens abateram, de todos os anos. */
 export function saldoDaCaixinha(meses: MesDoc[], viagens: Viagem[]): number {
-  return soma(meses.map((m) => m.poupViagem)) - soma(viagens.filter((v) => v.abater).map((v) => v.gasto))
+  return soma(meses.map((m) => m.poupViagem)) - soma(viagens.map(abatidoDaViagem))
 }
 
 export const CARTAO_VAZIO: Cartao = {

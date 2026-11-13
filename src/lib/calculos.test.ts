@@ -119,10 +119,15 @@ describe('resumo do ano', () => {
 })
 
 describe('saldo da caixinha de viagem', () => {
-  it('soma o Poup. viagem de todos os anos e tira só as viagens marcadas', () => {
-    const viagem = (mes: string, gasto: number, abater?: boolean) => ({ id: mes + gasto, nome: 'x', mes, gasto, itens: [], obs: '', abater })
+  it('soma o Poup. viagem de todos os anos e tira só o que cada viagem abateu', () => {
+    const viagem = (mes: string, gasto: number, extra: object = {}) => ({ id: mes + gasto, nome: 'x', mes, gasto, itens: [], obs: '', ...extra })
     const meses = [{ ...mesVazio('2026-12'), poupViagem: 100000 }, { ...mesVazio('2027-01'), poupViagem: 50000 }]
-    expect(saldoDaCaixinha(meses, [viagem('2026-12', 30000, true), viagem('2026-12', 99999), viagem('2027-01', 80000, true)])).toBe(40000)
+    const viagens = [
+      viagem('2026-12', 30000, { abater: true }), // forma antiga: o gasto inteiro
+      viagem('2026-12', 99999), // paga por fora
+      viagem('2027-01', 80000, { abatido: 25000 }), // só uma parte
+    ]
+    expect(saldoDaCaixinha(meses, viagens)).toBe(95000)
   })
 })
 

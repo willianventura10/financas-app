@@ -26,6 +26,11 @@ export function nomeDoMes(mes: string): string {
 }
 
 /** "2026-11-05" -> "05/11" */
+/** "2026-12" -> "dez/2026". */
+export function mesCurto(mes: string): string {
+  return `${NOMES[Number(mes.slice(5, 7)) - 1].slice(0, 3)}/${mes.slice(0, 4)}`
+}
+
 export function diaMes(data: string): string {
   return `${data.slice(8, 10)}/${data.slice(5, 7)}`
 }

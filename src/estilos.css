@@ -40,7 +40,8 @@ ul {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -766,8 +767,7 @@ summary {
   grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
 }
 
-.contas label,
-.marcar {
+.contas label {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -777,8 +777,7 @@ summary {
   color: var(--tinta);
 }
 
-.contas input,
-.marcar input {
+.contas input {
   width: 1.25rem;
   height: 1.25rem;
   accent-color: var(--verde);
@@ -899,8 +898,38 @@ summary {
   color: var(--tinta-2);
 }
 
+.viagens .linha-razao {
+  justify-content: flex-start;
+  align-items: baseline;
+}
+
+.viagens .linha-razao small,
+.viagens .linha-razao .num {
+  white-space: nowrap;
+}
+
+.viagens .linha-razao .num {
+  margin-left: auto;
+}
+
 .viagens .apoio {
   white-space: pre-line;
+}
+
+.campo.largo {
+  grid-column: 1 / -1;
+}
+
+.campo textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  color: var(--tinta);
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  resize: vertical;
 }
 
 .mais .bloco:first-child {
@@ -922,6 +951,11 @@ summary {
 
   .tabela {
     font-size: 0.8125rem;
+  }
+
+  /* No computador, o nome da viagem ocupa uma coluna fixa e as datas ficam alinhadas. */
+  .viagens .local {
+    min-width: 20rem;
   }
 
   /* A tabela do ano tem 14 colunas: aperta as células e rola dentro do bloco se a tela for estreita. */

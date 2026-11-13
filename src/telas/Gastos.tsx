@@ -13,6 +13,8 @@ interface Props {
   mes: string
   mesDoc: MesDoc
   meses: MesDoc[]
+  /** Saldo da caixinha de viagem. */
+  caixinha: number
   config: Config | null
   aoAbrir: (l: Lancamento) => void
   aoGravarMes: (mes: MesDoc) => void
@@ -63,7 +65,7 @@ export function Gastos(props: Props) {
         ))}
       {visao === 'ano' &&
         (config ? (
-          <GastosAno ano={mes.slice(0, 4)} itensDoAno={props.itensDoAno} meses={props.meses} config={config} />
+          <GastosAno ano={mes.slice(0, 4)} itensDoAno={props.itensDoAno} meses={props.meses} caixinha={props.caixinha} config={config} />
         ) : (
           semConfig
         ))}

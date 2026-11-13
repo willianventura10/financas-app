@@ -1,6 +1,6 @@
 import { Resultado } from '../componentes'
 import type { Config, Lancamento, MesDoc } from '../dados/tipos'
-import { resumoDoAno } from '../lib/calculos'
+import { resumoDoAno, type DestinoId, type LinhaDestino } from '../lib/calculos'
 import { nomeDaCategoria } from '../lib/categorias'
 import { hoje, mesDe, nomeDoMes } from '../lib/datas'
 import { numero, reais } from '../lib/dinheiro'
@@ -9,6 +9,7 @@ interface Props {
   ano: string
   itensDoAno: Lancamento[]
   meses: MesDoc[]
+  caixinha: number
   config: Config
 }
 
@@ -47,12 +48,30 @@ function Comparativo(props: { titulo: string; referencia: string; realizado: str
   )
 }
 
+const DESTINO: Record<DestinoId, string> = {
+  social: 'Social',
+  cartaoElis: 'Cartão Elis',
+  poupado: 'Poupado',
+  poupViagem: 'Poup. viagem',
+}
+
 const ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 /** Resumo do ano: o topo da aba Mensal (linhas 1 a 16) e seus dois gráficos. */
-export function GastosAno({ ano, itensDoAno, meses, config }: Props) {
+export function GastosAno({ ano, itensDoAno, meses, caixinha, config }: Props) {
   const r = resumoDoAno(ano, itensDoAno, meses, config, mesDe(hoje()))
   const doAno = meses.filter((m) => m.mes.startsWith(ano)).sort((a, b) => a.mes.localeCompare(b.mes))
+  const linhaDeDestino = (d: LinhaDestino) => (
+    <tr key={d.id}>
+      <td>{DESTINO[d.id]}</td>
+      {d.porMes.map((v, i) => (
+        <td key={i} className="num">
+          {v ? numero(v) : ''}
+        </td>
+      ))}
+      <td className="num">{numero(d.acumulado)}</td>
+    </tr>
+  )
 
   return (
     <>
@@ -89,13 +108,13 @@ export function GastosAno({ ano, itensDoAno, meses, config }: Props) {
       <section className="bloco">
         <h2>Poupado em {ano}</h2>
         <Resultado rotulo="Reserva" valor={r.poupado} forte />
-        <Resultado rotulo="Saldo da caixinha de viagem" valor={r.caixinhaViagem} forte />
+        <Resultado rotulo="Saldo da caixinha de viagem" valor={caixinha} forte />
         <table className="tabela">
           <thead>
             <tr>
               <th>Mês</th>
               <th>Reserva</th>
-              <th>Viagem</th>
+              <th>Poup. viagem</th>
             </tr>
           </thead>
           <tbody>
@@ -103,7 +122,7 @@ export function GastosAno({ ano, itensDoAno, meses, config }: Props) {
               <tr key={m.mes}>
                 <td>{nomeDoMes(m.mes).split(' ')[0]}</td>
                 <td className="num">{numero(m.poupado)}</td>
-                <td className="num">{numero(m.caixinhaViagem)}</td>
+                <td className="num">{numero(m.poupViagem)}</td>
               </tr>
             ))}
           </tbody>
@@ -134,18 +153,35 @@ export function GastosAno({ ano, itensDoAno, meses, config }: Props) {
                 <td className="num">{numero(l.acumulado)}</td>
               </tr>
             ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td>Total, sem Viagens</td>
+            <tr className="total">
+              <td>Total</td>
               {r.totais.porMes.map((v, i) => (
+                <td key={i} className="num">
+                  {v + r.viagens.porMes[i] ? numero(v + r.viagens.porMes[i]) : ''}
+                </td>
+              ))}
+              <td className="num">{numero(r.totais.acumulado + r.viagens.acumulado)}</td>
+            </tr>
+          </tbody>
+          <tbody>
+            <tr className="subtitulo">
+              <th>Destinações</th>
+              {ABREV.map((m) => (
+                <th key={m}>{m}</th>
+              ))}
+              <th>Acumulado</th>
+            </tr>
+            {r.destinacoes.map(linhaDeDestino)}
+            <tr className="total">
+              <td>Total destinado</td>
+              {r.destinado.porMes.map((v, i) => (
                 <td key={i} className="num">
                   {v ? numero(v) : ''}
                 </td>
               ))}
-              <td className="num">{numero(r.totais.acumulado)}</td>
+              <td className="num">{numero(r.destinado.acumulado)}</td>
             </tr>
-          </tfoot>
+          </tbody>
         </table>
         <p className="apoio">Em vermelho, os meses em que a categoria passou da meta.</p>
       </section>

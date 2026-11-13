@@ -38,8 +38,6 @@ export interface MesDoc {
   cartaoElis: number
   poupado: number
   poupViagem: number
-  /** O que o mês somou (ou tirou) da caixinha de viagem. */
-  caixinhaViagem: number
   /** Contas marcadas como pagas. */
   contas: Record<string, boolean>
   cartao?: Cartao
@@ -138,6 +136,8 @@ export interface Viagem {
   gasto: number
   itens: { nome: string; valor: number }[]
   obs: string
+  /** O gasto sai do saldo da caixinha de viagem. */
+  abater?: boolean
 }
 
 export interface EstadoSync {

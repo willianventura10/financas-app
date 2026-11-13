@@ -12,6 +12,8 @@ import { useInstalar } from '../instalar'
 interface Props {
   email: string | null
   viagens: Viagem[]
+  /** Ano do mês selecionado no topo: a lista de viagens mostra só ele. */
+  ano: string
   caixinhaViagem: number
   aoGravar: (caminho: string, dados: object) => void
   aoExcluir: (caminho: string, dados: object, texto: string) => void
@@ -117,19 +119,20 @@ function Conta({ email }: Pick<Props, 'email'>) {
   )
 }
 
-function Viagens({ viagens, caixinhaViagem, aoGravar, aoExcluir }: Props) {
+function Viagens({ viagens, ano, caixinhaViagem, aoGravar, aoExcluir }: Props) {
   const [nome, setNome] = useState('')
   const [mes, setMes] = useState(mesDe(hoje()))
   const [gasto, setGasto] = useState('')
+  const [abater, setAbater] = useState(false)
   const [erro, setErro] = useState('')
-  const ordenadas = [...viagens].sort((a, b) => b.mes.localeCompare(a.mes))
+  const ordenadas = viagens.filter((v) => v.mes.startsWith(ano)).sort((a, b) => b.mes.localeCompare(a.mes))
 
   function adicionar(e: FormEvent) {
     e.preventDefault()
     const valor = lerCentavos(gasto)
     if (!nome.trim() || !mes || !valor) return setErro('Preencha o nome, o mês e o gasto da viagem.')
     const id = crypto.randomUUID()
-    aoGravar(`viagens/${id}`, { id, nome: nome.trim(), mes, gasto: valor, itens: [], obs: '' } satisfies Viagem)
+    aoGravar(`viagens/${id}`, { id, nome: nome.trim(), mes, gasto: valor, itens: [], obs: '', abater } satisfies Viagem)
     setNome('')
     setGasto('')
     setErro('')
@@ -137,7 +140,7 @@ function Viagens({ viagens, caixinhaViagem, aoGravar, aoExcluir }: Props) {
 
   return (
     <section className="bloco sem-linha">
-      <h2>Viagens</h2>
+      <h2>Viagens de {ano}</h2>
       <Resultado rotulo="Saldo da caixinha de viagem" valor={caixinhaViagem} forte />
       <ul className="viagens">
         {ordenadas.map((v) => (
@@ -152,6 +155,7 @@ function Viagens({ viagens, caixinhaViagem, aoGravar, aoExcluir }: Props) {
               <p className="apoio">{v.itens.map((i) => `${i.nome} ${reais(i.valor)}`).join('; ')}</p>
             )}
             {v.obs && <p className="apoio">{v.obs}</p>}
+            {v.abater && <p className="apoio">Abatida da caixinha de viagem.</p>}
             <button className="texto" onClick={() => aoExcluir(`viagens/${v.id}`, v, 'Viagem excluída')}>
               Excluir
             </button>
@@ -170,6 +174,10 @@ function Viagens({ viagens, caixinhaViagem, aoGravar, aoExcluir }: Props) {
         <label className="campo">
           Gasto
           <input className="num" inputMode="decimal" value={gasto} onChange={(e) => setGasto(e.target.value)} placeholder="0,00" />
+        </label>
+        <label className="marcar">
+          <input type="checkbox" checked={abater} onChange={(e) => setAbater(e.target.checked)} />
+          Abater da caixinha de viagem
         </label>
         <button className="secundario">Adicionar viagem</button>
       </form>

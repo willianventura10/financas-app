@@ -36,13 +36,6 @@ export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: P
           {campo('Cartão Elis', 'cartaoElis')}
           {campo('Poupado', 'poupado')}
           {campo('Poup. viagem', 'poupViagem')}
-          <CampoValor
-            rotulo="Caixinha de viagem no mês"
-            valor={mesDoc.caixinhaViagem}
-            aoMudar={(v) => mudar({ caixinhaViagem: v ?? 0 })}
-            negativo
-            ajuda="Poup. viagem menos o gasto da viagem do mês."
-          />
         </div>
         <Resultado rotulo="Gasto no mês" valor={resumo.total} />
         <Resultado rotulo="Flutuável líquido" valor={resumo.flutuavel} forte />

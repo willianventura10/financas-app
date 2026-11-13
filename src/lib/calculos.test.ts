@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { criarRepoLocal } from '../dados/repoLocal'
 import type { Cartao, Config, Lancamento, MesDoc } from '../dados/tipos'
-import { CARTAO_VAZIO, contasPendentes, mesVazio, resumoDoAno, resumoDoCartao, resumoDoMes } from './calculos'
+import { CARTAO_VAZIO, contasPendentes, mesVazio, resumoDoAno, resumoDoCartao, resumoDoMes, saldoDaCaixinha } from './calculos'
 import type { CategoriaId } from './categorias'
 import { lerCentavos, numero } from './dinheiro'
 
@@ -76,9 +76,9 @@ describe('resumo do ano', () => {
     gasto('2025-12', 'alim', 999999), // outro ano
   ]
   const meses: MesDoc[] = [
-    { ...mesVazio('2026-01'), cvm: 1700000, poupado: 500000, caixinhaViagem: -30000 },
-    { ...mesVazio('2026-02'), cvm: 1700000, extra: 100000, poupado: 600000, caixinhaViagem: 85000 },
-    { ...mesVazio('2025-12'), cvm: 1, poupado: 1, caixinhaViagem: 1 },
+    { ...mesVazio('2026-01'), cvm: 1700000, social: 30000, poupado: 500000, poupViagem: 50000 },
+    { ...mesVazio('2026-02'), cvm: 1700000, extra: 100000, cartaoElis: 120000, poupado: 600000 },
+    { ...mesVazio('2025-12'), cvm: 1, poupado: 1 },
   ]
   const doAno = itens.filter((l) => l.mes.startsWith('2026'))
   const r = resumoDoAno('2026', doAno, meses, config, '2026-03')
@@ -98,16 +98,31 @@ describe('resumo do ano', () => {
     expect(r.totais.porMes.slice(0, 3)).toEqual([210000, 490000, 100000])
   })
 
-  it('soma renda, poupado e caixinha só do ano pedido', () => {
+  it('soma renda e poupado só do ano pedido', () => {
     expect(r.renda).toBe(3500000)
     expect(r.rendaPrevista).toBe(18000000)
     expect(r.poupado).toBe(1100000)
-    expect(r.caixinhaViagem).toBe(55000)
+  })
+
+  it('soma as destinações de cada mês', () => {
+    const de = (id: string) => r.destinacoes.find((d) => d.id === id)!
+    expect(r.destinacoes.map((d) => d.id)).toEqual(['social', 'cartaoElis', 'poupado', 'poupViagem'])
+    expect(de('poupado').porMes.slice(0, 3)).toEqual([500000, 600000, 0])
+    expect(r.destinado.porMes.slice(0, 3)).toEqual([580000, 720000, 0]) // social + cartão Elis + poupado + poup. viagem
+    expect(r.destinado.acumulado).toBe(1300000)
   })
 
   it('fica sem média em janeiro e usa os 12 meses em ano já encerrado', () => {
     expect(resumoDoAno('2026', doAno, meses, config, '2026-01').totais.media).toBeNull()
     expect(resumoDoAno('2026', doAno, meses, config, '2027-02').mesesFechados).toBe(12)
+  })
+})
+
+describe('saldo da caixinha de viagem', () => {
+  it('soma o Poup. viagem de todos os anos e tira só as viagens marcadas', () => {
+    const viagem = (mes: string, gasto: number, abater?: boolean) => ({ id: mes + gasto, nome: 'x', mes, gasto, itens: [], obs: '', abater })
+    const meses = [{ ...mesVazio('2026-12'), poupViagem: 100000 }, { ...mesVazio('2027-01'), poupViagem: 50000 }]
+    expect(saldoDaCaixinha(meses, [viagem('2026-12', 30000, true), viagem('2026-12', 99999), viagem('2027-01', 80000, true)])).toBe(40000)
   })
 })
 

@@ -4,7 +4,7 @@ import { firebase } from './firebase'
 import { criarRepoFirestore } from './dados/repoFirestore'
 import { criarRepoLocal } from './dados/repoLocal'
 import type { Config, EstadoSync, Historico, Lancamento, Lista, MesDoc, Operacao, Posicao, Viagem } from './dados/tipos'
-import { mesVazio } from './lib/calculos'
+import { mesVazio, saldoDaCaixinha } from './lib/calculos'
 import { hoje, mesDe, nomeDoMes, somarMes } from './lib/datas'
 import { Login } from './telas/Login'
 import { Inicio } from './telas/Inicio'
@@ -63,6 +63,7 @@ function Principal({ usuario }: { usuario: User | null }) {
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const conectado = useConectado()
   const ano = mes.slice(0, 4)
+  const caixinha = saldoDaCaixinha(meses, viagens)
 
   useEffect(() => {
     setItensDoAno(null)
@@ -197,6 +198,7 @@ function Principal({ usuario }: { usuario: User | null }) {
               mes={mes}
               mesDoc={mesDoc}
               meses={meses}
+              caixinha={caixinha}
               config={config}
               aoAbrir={setEditor}
               aoGravarMes={(m) => gravar(`meses/${m.mes}`, m)}
@@ -218,7 +220,8 @@ function Principal({ usuario }: { usuario: User | null }) {
             <Mais
               email={usuario?.email ?? null}
               viagens={viagens}
-              caixinhaViagem={meses.filter((m) => m.mes.startsWith(ano)).reduce((s, m) => s + m.caixinhaViagem, 0)}
+              ano={ano}
+              caixinhaViagem={caixinha}
               aoGravar={gravar}
               aoExcluir={excluir}
               aoImportar={(docs) => repo.importar(docs)}

@@ -55,7 +55,7 @@ export function Metas({ config, aoGravar }: { config: Config; aoGravar: (config:
           ))}
         </div>
         <Resultado rotulo="Meta total do mês" valor={metaTotal(config)} forte />
-        <p className="apoio">Viagens não tem meta mensal: é paga pela caixinha de viagem.</p>
+        <p className="apoio">Viagens não tem meta mensal.</p>
         <div className="grade">
           <CampoValor
             rotulo="Renda prevista por mês"

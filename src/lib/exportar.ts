@@ -41,7 +41,7 @@ export function montarPlanilhas(docs: DocParaImportar[]): { sheet: string; data:
     {
       sheet: 'Meses',
       data: [
-        cabecalho('Mês', 'CVM', 'Extra', 'Social', 'Cartão Elis', 'Poupado', 'Poup. viagem', 'Caixinha de viagem', 'Fatura do cartão'),
+        cabecalho('Mês', 'CVM', 'Extra', 'Social', 'Cartão Elis', 'Poupado', 'Poup. viagem', 'Fatura do cartão'),
         ...meses.map((m) => [
           texto(m.mes),
           reais(m.cvm),
@@ -50,7 +50,6 @@ export function montarPlanilhas(docs: DocParaImportar[]): { sheet: string; data:
           reais(m.cartaoElis),
           reais(m.poupado),
           reais(m.poupViagem),
-          reais(m.caixinhaViagem),
           reais(m.cartao?.fatura),
         ]),
       ],

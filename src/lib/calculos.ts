@@ -1,11 +1,18 @@
-import type { Cartao, Config, Lancamento, MesDoc } from '../dados/tipos'
+import type { Cartao, Config, Lancamento, MesDoc, Viagem } from '../dados/tipos'
 import { CATEGORIAS, type CategoriaId } from './categorias'
 import { totaisPorCategoria, totalDoMes } from './totais'
 
 // As regras de cálculo da aba Mensal. Tudo em centavos.
 
+const soma = (valores: number[]) => valores.reduce((s, v) => s + v, 0)
+
 export function mesVazio(mes: string): MesDoc {
-  return { mes, cvm: null, extra: 0, social: 0, cartaoElis: 0, poupado: 0, poupViagem: 0, caixinhaViagem: 0, contas: {} }
+  return { mes, cvm: null, extra: 0, social: 0, cartaoElis: 0, poupado: 0, poupViagem: 0, contas: {} }
+}
+
+/** Saldo da caixinha de viagem: todo o Poup. viagem menos as viagens marcadas para abater, de todos os anos. */
+export function saldoDaCaixinha(meses: MesDoc[], viagens: Viagem[]): number {
+  return soma(meses.map((m) => m.poupViagem)) - soma(viagens.filter((v) => v.abater).map((v) => v.gasto))
 }
 
 export const CARTAO_VAZIO: Cartao = {
@@ -16,8 +23,6 @@ export const CARTAO_VAZIO: Cartao = {
   ajusteAbater: 0,
   ajusteFatura: 0,
 }
-
-const soma = (valores: number[]) => valores.reduce((s, v) => s + v, 0)
 
 export function metaTotal(config: Config): number {
   return soma(Object.values(config.metas))
@@ -75,18 +80,31 @@ export interface LinhaAno {
   previsto: number | null
 }
 
+export type DestinoId = 'social' | 'cartaoElis' | 'poupado' | 'poupViagem'
+
+export interface LinhaDestino {
+  id: DestinoId
+  porMes: number[]
+  acumulado: number
+}
+
+const DESTINOS: DestinoId[] = ['social', 'cartaoElis', 'poupado', 'poupViagem']
+
 export interface ResumoAno {
   /** As 11 categorias com meta, na ordem da planilha. */
   linhas: LinhaAno[]
-  /** Viagens fica fora do acumulado: é paga pela caixinha de viagem. */
+  /** Viagens fica fora do acumulado e da média, como na planilha. */
   viagens: LinhaAno
   mesesFechados: number
   totais: { porMes: number[]; acumulado: number; media: number | null; meta: number; previsto: number }
+  /** As destinações informadas em cada mês, na ordem da tela do mês. */
+  destinacoes: LinhaDestino[]
+  /** Soma das destinações de cada mês. */
+  destinado: { porMes: number[]; acumulado: number }
   /** CVM + Extra de todos os meses informados. */
   renda: number
   rendaPrevista: number
   poupado: number
-  caixinhaViagem: number
 }
 
 /**
@@ -121,6 +139,16 @@ export function resumoDoAno(
   const doAno = meses.filter((m) => m.mes.startsWith(ano))
   const porMes = [...Array(12).keys()].map((i) => soma(linhas.map((l) => l.porMes[i])))
 
+  const destinacoes = DESTINOS.map((id): LinhaDestino => {
+    const valores = [...Array(12).keys()].map(
+      (i) => doAno.find((m) => m.mes === `${ano}-${String(i + 1).padStart(2, '0')}`)?.[id] ?? 0,
+    )
+    return { id, porMes: valores, acumulado: soma(valores) }
+  })
+  const destinado = [...Array(12).keys()].map((i) =>
+    soma(destinacoes.map((d) => d.porMes[i])),
+  )
+
   return {
     linhas,
     viagens: linha('viagens'),
@@ -132,10 +160,11 @@ export function resumoDoAno(
       meta: metaTotal(config),
       previsto: metaTotal(config) * 12,
     },
+    destinacoes,
+    destinado: { porMes: destinado, acumulado: soma(destinado) },
     renda: soma(doAno.map((m) => (m.cvm ?? 0) + m.extra)),
     rendaPrevista: config.rendaPrevistaMensal * 12,
     poupado: soma(doAno.map((m) => m.poupado)),
-    caixinhaViagem: soma(doAno.map((m) => m.caixinhaViagem)),
   }
 }
 

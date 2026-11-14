@@ -994,9 +994,46 @@ summary {
   grid-template-columns: repeat(5, 1fr);
 }
 
+.visoes.seis {
+  grid-template-columns: repeat(6, 1fr);
+}
+
 .visoes.quatro button,
-.visoes.cinco button {
+.visoes.cinco button,
+.visoes.seis button {
   font-size: 0.875rem;
+}
+
+.guia {
+  max-width: 44rem;
+}
+
+.guia details {
+  margin: 0;
+  border-top: 1px solid var(--linha);
+}
+
+.guia summary {
+  min-height: 0;
+  padding: 0.8rem 0;
+  color: var(--tinta);
+}
+
+.guia details[open] {
+  padding-bottom: 0.75rem;
+}
+
+.guia p,
+.guia li {
+  margin: 0 0 0.5rem;
+  color: var(--tinta-2);
+  line-height: 1.5;
+}
+
+.guia ul {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+  list-style: disc;
 }
 
 .bloco.sem-linha {

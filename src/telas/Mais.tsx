@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Resultado } from '../componentes'
 import type { Config, DocParaImportar, Lista, Viagem } from '../dados/tipos'
 import { exportarBackup, exportarExcel } from '../lib/exportar'
+import { Guia } from './Guia'
 import { Listas } from './Listas'
 import { Metas } from './Metas'
 import { hoje, mesCurto, mesDe } from '../lib/datas'
@@ -24,13 +25,14 @@ interface Props {
   aoLerTudo: () => Promise<DocParaImportar[]>
 }
 
-type Secao = 'viagens' | 'metas' | 'listas' | 'dados' | 'conta'
+type Secao = 'viagens' | 'metas' | 'listas' | 'dados' | 'conta' | 'guia'
 const SECOES: { id: Secao; nome: string }[] = [
   { id: 'viagens', nome: 'Viagens' },
   { id: 'metas', nome: 'Metas' },
   { id: 'listas', nome: 'Listas' },
   { id: 'dados', nome: 'Dados' },
   { id: 'conta', nome: 'Conta' },
+  { id: 'guia', nome: 'Guia' },
 ]
 
 export function Mais(props: Props) {
@@ -38,7 +40,7 @@ export function Mais(props: Props) {
 
   return (
     <div className="mais">
-      <div className="visoes cinco" role="tablist" aria-label="Seções de Mais">
+      <div className="visoes seis" role="tablist" aria-label="Seções de Mais">
         {SECOES.map((s) => (
           <button key={s.id} role="tab" aria-selected={secao === s.id} onClick={() => setSecao(s.id)}>
             {s.nome}
@@ -63,6 +65,7 @@ export function Mais(props: Props) {
         </>
       )}
       {secao === 'conta' && <Conta email={props.email} />}
+      {secao === 'guia' && <Guia />}
     </div>
   )
 }

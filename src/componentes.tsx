@@ -9,10 +9,12 @@ interface CampoValorProps {
   aoMudar: (valor: number | null) => void
   negativo?: boolean
   ajuda?: string
+  /** Nome lido pelo leitor de tela quando o campo não tem rótulo visível. */
+  nome?: string
 }
 
 /** Campo de dinheiro que grava ao sair, para fazer uma gravação por alteração. */
-export function CampoValor({ rotulo, valor, aoMudar, negativo, ajuda }: CampoValorProps) {
+export function CampoValor({ rotulo, valor, aoMudar, negativo, ajuda, nome }: CampoValorProps) {
   const salvo = valor === null ? '' : numero(valor)
   const [digitado, setDigitado] = useState<string | null>(null)
   const [invalido, setInvalido] = useState(false)
@@ -33,6 +35,7 @@ export function CampoValor({ rotulo, valor, aoMudar, negativo, ajuda }: CampoVal
         className="num"
         inputMode={negativo ? 'text' : 'decimal'}
         placeholder="0,00"
+        aria-label={nome}
         aria-invalid={invalido || undefined}
         value={digitado ?? salvo}
         onFocus={() => setDigitado(salvo)}

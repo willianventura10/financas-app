@@ -1107,6 +1107,21 @@ select {
   border-radius: 8px;
 }
 
+.semanas {
+  max-width: 34rem;
+  margin-bottom: 0.5rem;
+}
+
+.semanas small {
+  display: block;
+  color: var(--tinta-2);
+}
+
+.semanas .campo {
+  max-width: 7.5rem;
+  margin-left: auto;
+}
+
 .marcar {
   display: flex;
   align-items: center;

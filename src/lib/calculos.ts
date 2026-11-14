@@ -61,16 +61,42 @@ export interface ResumoCartao {
   uber: number
   /** O que já foi lançado em outras categorias e sai da fatura. */
   abater: number
+  /** Alimentação lançada no cartão em cada semana do mês. */
+  lancado: number[]
   /** Fatura − abater: o valor que vira "Cartão" no mês seguinte. */
   atualizado: number | null
 }
 
-export function resumoDoCartao(itensDoMes: Lancamento[], c: Cartao): ResumoCartao {
+/** As semanas do calendário do mês, de domingo a sábado. O que passar da quinta entra na quinta. */
+export function semanasDoMes(mes: string): { de: number; ate: number }[] {
+  const [ano, m] = mes.split('-').map(Number)
+  const dias = new Date(ano, m, 0).getDate()
+  const primeiroSabado = 7 - new Date(ano, m - 1, 1).getDay()
+  return [0, 1, 2, 3, 4].map((i) => ({
+    de: i === 0 ? 1 : primeiroSabado + 7 * (i - 1) + 1,
+    ate: i === 4 ? dias : Math.min(primeiroSabado + 7 * i, dias),
+  }))
+}
+
+/** Alimentação com data e paga no cartão, somada por semana do calendário. */
+export function alimentacaoPorSemana(itensDoMes: Lancamento[], mes: string): number[] {
+  const semanas = semanasDoMes(mes)
+  const total = [0, 0, 0, 0, 0]
+  for (const l of itensDoMes) {
+    if (l.categoria !== 'alim' || l.foraDoCartao || !l.data?.startsWith(mes)) continue
+    const dia = Number(l.data.slice(8, 10))
+    total[semanas.findIndex((s) => dia <= s.ate)] += l.valor
+  }
+  return total
+}
+
+export function resumoDoCartao(itensDoMes: Lancamento[], c: Cartao, mes: string): ResumoCartao {
   const porCategoria = totaisPorCategoria(itensDoMes)
   const de = (id: CategoriaId) => porCategoria.find((t) => t.id === id)!.total
   const uber = de('viagens') + de('transporte') + c.ajusteUber
-  const abater = uber + c.saudeAcademia + soma(c.semanas) + c.ajusteAbater
-  return { uber, abater, atualizado: c.fatura === null ? null : c.fatura + c.ajusteFatura - abater }
+  const lancado = alimentacaoPorSemana(itensDoMes, mes)
+  const abater = uber + c.saudeAcademia + soma(lancado) + soma(c.semanas) + c.ajusteAbater
+  return { uber, lancado, abater, atualizado: c.fatura === null ? null : c.fatura + c.ajusteFatura - abater }
 }
 
 export interface LinhaAno {

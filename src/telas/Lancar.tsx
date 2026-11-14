@@ -31,6 +31,8 @@ export function Lancar({ inicial, aoSalvar, aoExcluir, aoFechar }: Props) {
   )
   const [data, setData] = useState(inicial ? (inicial.data ?? '') : hoje())
   const [obs, setObs] = useState(inicial?.obs ?? '')
+  const [foraDoCartao, setForaDoCartao] = useState(inicial?.foraDoCartao ?? false)
+  const alimentacao = escolha === 'alim' || escolha === 'rua'
   const [erro, setErro] = useState('')
 
   function salvar(e: FormEvent) {
@@ -49,6 +51,7 @@ export function Lancar({ inicial, aoSalvar, aoExcluir, aoFechar }: Props) {
         valor: centavos,
         categoria: escolha === 'rua' ? 'alim' : escolha,
         comiNaRua: escolha === 'rua' || undefined,
+        foraDoCartao: (alimentacao && foraDoCartao) || undefined,
         obs: obs.trim() || undefined,
         criadoEm: inicial?.criadoEm ?? agora,
         editadoEm: agora,
@@ -104,6 +107,13 @@ export function Lancar({ inicial, aoSalvar, aoExcluir, aoFechar }: Props) {
             <input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" />
           </label>
         </div>
+
+        {alimentacao && (
+          <label className="marcar">
+            <input type="checkbox" checked={foraDoCartao} onChange={(e) => setForaDoCartao(e.target.checked)} />
+            Pago fora do cartão
+          </label>
+        )}
 
         {erro && (
           <p className="erro" role="alert">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { criarRepoLocal } from '../dados/repoLocal'
 import type { Cartao, Config, Lancamento, MesDoc } from '../dados/tipos'
-import { CARTAO_VAZIO, contasPendentes, mesVazio, resumoDoAno, resumoDoCartao, resumoDoMes, saldoDaCaixinha } from './calculos'
+import { CARTAO_VAZIO, contasPendentes, mesVazio, resumoDoAno, resumoDoCartao, resumoDoMes, saldoDaCaixinha, semanasDoMes } from './calculos'
 import type { CategoriaId } from './categorias'
 import { lerCentavos, numero } from './dinheiro'
 
@@ -42,7 +42,7 @@ describe('resumo do mês', () => {
 })
 
 describe('cartão', () => {
-  const itens = [gasto('2026-01', 'viagens', 141840), gasto('2026-01', 'transporte', 38030), gasto('2026-01', 'alim', 99999)]
+  const itens = [gasto('2026-01', 'viagens', 141840), gasto('2026-01', 'transporte', 38030), gasto('2026-01', 'alim', 99999, { data: null })]
   const cartao: Cartao = {
     fatura: 559600,
     semanas: [32101, 76251, 49846, 75624, 0],
@@ -53,16 +53,36 @@ describe('cartão', () => {
   }
 
   it('abate da fatura o que já está em outras categorias', () => {
-    const r = resumoDoCartao(itens, cartao)
+    const r = resumoDoCartao(itens, cartao, '2026-01')
     expect(r.uber).toBe(141840 + 38030 - 18800) // Viagens + Transporte + ajuste
     expect(r.abater).toBe(r.uber + 15990 + 233822 + 9000)
     expect(r.atualizado).toBe(559600 - r.abater)
   })
 
+  it('divide o mês em semanas do calendário, de domingo a sábado', () => {
+    // Novembro de 2026 começa num domingo; agosto de 2026, num sábado, e teria seis semanas.
+    expect(semanasDoMes('2026-11')).toEqual([{ de: 1, ate: 7 }, { de: 8, ate: 14 }, { de: 15, ate: 21 }, { de: 22, ate: 28 }, { de: 29, ate: 30 }])
+    expect(semanasDoMes('2026-08')).toEqual([{ de: 1, ate: 1 }, { de: 2, ate: 8 }, { de: 9, ate: 15 }, { de: 16, ate: 22 }, { de: 23, ate: 31 }])
+  })
+
+  it('soma por semana a alimentação com data, sem o que foi pago fora do cartão', () => {
+    const doMes = [
+      gasto('2026-11', 'alim', 5000, { data: '2026-11-07' }),
+      gasto('2026-11', 'alim', 3000, { data: '2026-11-08', comiNaRua: true }),
+      gasto('2026-11', 'alim', 2000, { data: '2026-11-30' }),
+      gasto('2026-11', 'alim', 7000, { data: '2026-11-09', foraDoCartao: true }),
+      gasto('2026-11', 'alim', 9000, { data: null }), // veio da planilha, sem dia
+      gasto('2026-11', 'saude', 4000, { data: '2026-11-09' }),
+    ]
+    const r = resumoDoCartao(doMes, { ...CARTAO_VAZIO, semanas: [100, 0, 0, 0, 0] }, '2026-11')
+    expect(r.lancado).toEqual([5000, 3000, 0, 0, 2000])
+    expect(r.abater).toBe(10000 + 100) // lançado + ajuste da semana
+  })
+
   it('aplica o ajuste da fatura e fica sem valor quando a fatura não foi informada', () => {
-    const comAjuste = resumoDoCartao(itens, { ...cartao, ajusteFatura: -51552 })
+    const comAjuste = resumoDoCartao(itens, { ...cartao, ajusteFatura: -51552 }, '2026-01')
     expect(comAjuste.atualizado).toBe(559600 - 51552 - comAjuste.abater)
-    expect(resumoDoCartao(itens, CARTAO_VAZIO).atualizado).toBeNull()
+    expect(resumoDoCartao(itens, CARTAO_VAZIO, '2026-01').atualizado).toBeNull()
   })
 })
 

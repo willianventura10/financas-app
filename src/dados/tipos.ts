@@ -12,6 +12,8 @@ export interface Lancamento {
   categoria: CategoriaId
   /** "Comi na rua" é Alimentação com esta marca. */
   comiNaRua?: boolean
+  /** Alimentação paga sem o cartão: fica fora do que o mês abate da fatura. */
+  foraDoCartao?: boolean
   obs?: string
   origem?: 'planilha'
   criadoEm: number
@@ -21,7 +23,7 @@ export interface Lancamento {
 /** Conciliação da fatura do cartão, como nas linhas 59 a 67 da aba Mensal. */
 export interface Cartao {
   fatura: number | null
-  /** Alimentação paga no cartão, semana a semana. */
+  /** Ajuste manual de cada semana, somado à Alimentação lançada com data naquela semana. */
   semanas: number[]
   saudeAcademia: number
   /** Ajustes manuais que a planilha fazia dentro das fórmulas. */

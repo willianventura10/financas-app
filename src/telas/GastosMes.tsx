@@ -1,7 +1,8 @@
 import { CampoValor, Resultado } from '../componentes'
 import type { Cartao, Config, Lancamento, MesDoc } from '../dados/tipos'
-import { CARTAO_VAZIO, resumoDoCartao, resumoDoMes } from '../lib/calculos'
+import { CARTAO_VAZIO, resumoDoCartao, resumoDoMes, semanasDoMes } from '../lib/calculos'
 import { nomeDoMes, somarMes } from '../lib/datas'
+import { numero } from '../lib/dinheiro'
 
 interface Props {
   itens: Lancamento[]
@@ -15,7 +16,7 @@ interface Props {
 export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: Props) {
   const resumo = resumoDoMes(itens, mesDoc, config)
   const cartao = mesDoc.cartao ?? CARTAO_VAZIO
-  const fatura = resumoDoCartao(itens, cartao)
+  const fatura = resumoDoCartao(itens, cartao, mesDoc.mes)
   const numeroDoMes = Number(mesDoc.mes.slice(5, 7))
   const contas = config.contas.filter((c) => !c.meses || c.meses.includes(numeroDoMes))
 
@@ -63,20 +64,45 @@ export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: P
         <h2>Cartão</h2>
         <div className="grade">
           <CampoValor rotulo="Fatura" valor={cartao.fatura} aoMudar={(v) => mudarCartao({ fatura: v })} />
-          {cartao.semanas.map((valor, i) => (
-            <CampoValor
-              key={i}
-              rotulo={`Alimentação, semana ${i + 1}`}
-              valor={valor}
-              aoMudar={(v) => mudarCartao({ semanas: cartao.semanas.map((s, j) => (j === i ? (v ?? 0) : s)) })}
-            />
-          ))}
           <CampoValor
             rotulo="Saúde, academia e celular"
             valor={cartao.saudeAcademia}
             aoMudar={(v) => mudarCartao({ saudeAcademia: v ?? 0 })}
           />
         </div>
+        <table className="tabela semanas">
+          <thead>
+            <tr>
+              <th>Alimentação no cartão</th>
+              <th>Lançado</th>
+              <th>Ajuste</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {semanasDoMes(mesDoc.mes).map((s, i) => (
+              <tr key={i}>
+                <td>
+                  Semana {i + 1} <small>{s.de > s.ate ? 'sem dias' : `dias ${s.de} a ${s.ate}`}</small>
+                </td>
+                <td className="num">{numero(fatura.lancado[i])}</td>
+                <td>
+                  <CampoValor
+                    rotulo=""
+                    nome={`Ajuste da semana ${i + 1}`}
+                    valor={cartao.semanas[i]}
+                    aoMudar={(v) => mudarCartao({ semanas: cartao.semanas.map((a, j) => (j === i ? (v ?? 0) : a)) })}
+                    negativo
+                  />
+                </td>
+                <td className="num">{numero(fatura.lancado[i] + cartao.semanas[i])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="apoio">
+          Lançado é a Alimentação com data naquela semana, sem o que foi marcado como pago fora do cartão.
+        </p>
         <details>
           <summary>Ajustes manuais</summary>
           <div className="grade">

@@ -127,8 +127,9 @@ const GUIA: Capitulo[] = [
       {
         titulo: 'Painel',
         texto: [
-          'Mostra o patrimônio total, a composição e cada caixa comparada com a sua meta.',
-          '- Lado convexo: a fatia em WRLD11 e GOLD11, com a faixa e a proporção definidas em Mais › Metas.',
+          'Mostra o patrimônio total, a composição e cada caixa comparada com a sua meta. As caixas são os seus objetivos, mais Convexo e A alocar.',
+          '- Lado convexo: a fatia nos ativos de risco, com a faixa e a proporção entre os ativos definidas em Mais › Metas.',
+          '- Base do convexo: o patrimônio sem os objetivos marcados como "Não conta para o convexo".',
           '- Exposição por instituição: quanto está em cada banco, comparado com o limite do FGC.',
           '- Pede atenção: vencimentos próximos e limites estourados.',
         ],
@@ -136,7 +137,7 @@ const GUIA: Capitulo[] = [
       {
         titulo: 'Sugestão para o aporte do mês',
         texto: [
-          'Digite o aporte novo e os preços de WRLD11 e GOLD11. O app distribui o valor nesta ordem: lado convexo, reserva, caixa do carro e fundo do apê.',
+          'Digite o aporte novo e o preço dos ativos do convexo. O app distribui o valor nesta ordem: primeiro o lado convexo, depois cada objetivo até a meta, na ordem da lista de Mais › Metas. O último objetivo fica com o resto.',
           'Deixe o aporte vazio se o dinheiro já está em "A alocar".',
         ],
       },
@@ -167,6 +168,17 @@ const GUIA: Capitulo[] = [
   {
     nome: 'Metas, listas e dados',
     topicos: [
+      {
+        titulo: 'Objetivos, ativos do convexo e opções das posições',
+        texto: [
+          'Em Mais › Metas, na parte de investimentos:',
+          '- Objetivos: crie, exclua e reordene (até seis). Cada um tem meta, data prevista e a opção "Não conta para o convexo". O nome do objetivo é a caixa que você escolhe na posição.',
+          '- Um objetivo com posições não pode ser excluído: mova as posições para outra caixa antes.',
+          '- Ativos do lado convexo: a lista de ativos e o alvo de cada um, somando 100%. O app acha o ativo pela posição com o mesmo nome.',
+          '- Opções das posições: as listas de instituições, classes e liquidez.',
+          'Os meses já fechados no Histórico não mudam quando você altera os objetivos.',
+        ],
+      },
       {
         titulo: 'Metas',
         texto: [

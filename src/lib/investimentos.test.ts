@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import type { Operacao, ParametrosInvest, Posicao } from '../dados/tipos'
 import {
   alertaDeVencimento,
+  caixasDe,
   fotoDoMes,
   linhasDoHistorico,
   painel,
   resumoPorAtivo,
   sugestaoDeAporte,
   tomDoStatus,
+  valorNoHistorico,
 } from './investimentos'
 
 // Números inventados: os dados reais nunca entram no repositório.
@@ -65,7 +67,8 @@ describe('painel', () => {
 
   it('soma o patrimônio e desconta a caixa do carro', () => {
     expect(p.total).toBe(10600000)
-    expect(p.semCarro).toBe(6300000)
+    expect(p.baseConvexo).toBe(6300000)
+    expect(p.foraDaBase).toEqual(['Carro'])
     expect(p.statusTotal).toBe('OK')
   })
 
@@ -89,13 +92,13 @@ describe('painel', () => {
   })
 
   it('mede WRLD11 e GOLD11 sobre a soma dos dois, sem a ação BR', () => {
-    expect(p.wrld.pct).toBeCloseTo(0.6)
-    expect(p.gold.pct).toBeCloseTo(0.4)
-    expect(p.wrld.status).toBe('OK')
-    expect(p.acaoBr.pctDoConvexo).toBeCloseTo(0.2)
+    const [wrld, gold] = p.ativos
+    expect(wrld.pct).toBeCloseTo(0.6)
+    expect(gold.pct).toBeCloseTo(0.4)
+    expect(wrld.status).toBe('OK')
+    expect(p.foraDaProporcao.pctDoConvexo).toBeCloseTo(0.2)
     const torto = painel([pos('Convexo', 900000, { classe: 'ETF global' }), pos('Convexo', 100000, { classe: 'ETF ouro' })], inv, HOJE)
-    expect(torto.wrld.status).toBe('Acima: pausar aportes')
-    expect(torto.gold.status).toBe('Abaixo: priorizar no aporte')
+    expect(torto.ativos.map((a) => a.status)).toEqual(['Acima: pausar aportes', 'Abaixo: priorizar no aporte'])
   })
 
   it('soma o FGC por instituição e conta vencimentos próximos', () => {
@@ -115,32 +118,91 @@ describe('sugestão de aporte', () => {
   const p = painel(carteira, inv, HOJE)
 
   it('segue a ordem convexo, reserva, carro e apê', () => {
-    const s = sugestaoDeAporte(p, inv, 500000, 15000, 2500)
+    const s = sugestaoDeAporte(p, inv, 500000, { WRLD11: 15000, GOLD11: 2500 })
     expect(s.total).toBe(500000)
     expect(s.convexo).toBe(130000) // o que falta para a meta, abaixo do teto de 2.000,00
     // (2.400 + 1.600 + 1.300) × 60% − 2.400 = 780,00 para WRLD11; o resto para GOLD11
-    expect(s.wrld).toBe(78000)
-    expect(s.gold).toBe(52000)
-    expect(s.cotasWrld).toBe(5) // 780 ÷ 150, para baixo
-    expect(s.cotasGold).toBe(20) // 520 ÷ 25, para baixo
-    expect(s.reserva).toBe(200000) // até a meta
-    expect(s.carro).toBe(0) // já acima da meta
-    expect(s.ape).toBe(170000) // o que sobra
-    expect(s.convexo + s.reserva + s.carro + s.ape).toBe(s.total)
+    expect(s.ativos).toEqual([
+      { nome: 'WRLD11', valor: 78000, cotas: 5 }, // 780 ÷ 150, para baixo
+      { nome: 'GOLD11', valor: 52000, cotas: 20 }, // 520 ÷ 25, para baixo
+    ])
+    expect(s.objetivos).toEqual([
+      { nome: 'Reserva', valor: 200000 }, // até a meta
+      { nome: 'Carro', valor: 0 }, // já acima da meta
+      { nome: 'Apê', valor: 170000 }, // o que sobra
+    ])
+    expect(s.sobra).toBe(0)
   })
 
   it('respeita o teto mensal do convexo e soma a caixa "A alocar"', () => {
     const comSobra = painel([...carteira, pos('A alocar', 3000000)], inv, HOJE)
-    const s = sugestaoDeAporte(comSobra, inv, 1000000, null, null)
+    const s = sugestaoDeAporte(comSobra, inv, 1000000)
     expect(s.total).toBe(4000000)
     expect(s.convexo).toBe(200000) // teto
-    expect(s.cotasWrld).toBeNull() // sem preço informado
+    expect(s.ativos[0].cotas).toBeNull() // sem preço informado
   })
 
   it('não manda nada para o convexo quando ele passou da faixa, nem distribui sem aporte', () => {
     const gordo = painel([pos('Reserva', 1000000), pos('Convexo', 400000)], inv, HOJE)
-    expect(sugestaoDeAporte(gordo, inv, 500000, null, null).convexo).toBe(0)
-    expect(sugestaoDeAporte(p, inv, 0, null, null)).toMatchObject({ total: 0, convexo: 0, reserva: 0, ape: 0 })
+    expect(sugestaoDeAporte(gordo, inv, 500000).convexo).toBe(0)
+    const parado = sugestaoDeAporte(p, inv, 0)
+    expect(parado).toMatchObject({ total: 0, convexo: 0, sobra: 0 })
+    expect(parado.objetivos.every((o) => o.valor === 0)).toBe(true)
+  })
+})
+
+describe('objetivos e ativos editados', () => {
+  const novo: ParametrosInvest = {
+    ...inv,
+    objetivos: [
+      { id: 'a', nome: 'Intercâmbio', meta: 2000000, data: '2028-01-31' },
+      { id: 'b', nome: 'Reserva', meta: 5000000, data: null, foraDoConvexo: true },
+    ],
+    ativosConvexo: [
+      { nome: 'AAA11', alvo: 0.5 },
+      { nome: 'BBB11', alvo: 0.3 },
+      { nome: 'CCC11', alvo: 0.2 },
+    ],
+  }
+  const posicoes = [
+    pos('Intercâmbio', 1500000),
+    pos('Reserva', 4000000),
+    pos('Convexo', 100000, { nome: 'aaa11' }),
+    pos('Convexo', 60000, { nome: 'BBB11' }),
+    pos('Convexo', 40000, { nome: 'Outra aposta' }),
+  ]
+  const p = painel(posicoes, novo, HOJE)
+
+  it('monta as caixas pela lista e tira da base do convexo os objetivos marcados', () => {
+    expect(p.caixas.map((c) => c.nome)).toEqual(['Intercâmbio', 'Reserva', 'Convexo', 'A alocar'])
+    expect(p.baseConvexo).toBe(5700000 - 4000000)
+    expect(p.statusTotal).toBe('OK')
+    expect(caixasDe(novo)).toEqual(['Intercâmbio', 'Reserva', 'Convexo', 'A alocar'])
+  })
+
+  it('acha os ativos pelo nome da posição e separa o que está fora da proporção', () => {
+    expect(p.ativos.map((a) => a.atual)).toEqual([100000, 60000, 0])
+    expect(p.ativos[0].pct).toBeCloseTo(0.625)
+    expect(p.foraDaProporcao.atual).toBe(40000)
+  })
+
+  it('distribui o aporte na ordem da lista, com o último objetivo ficando com o resto', () => {
+    const s = sugestaoDeAporte(p, novo, 1000000)
+    expect(s.convexo).toBe(100000) // 10% do aporte, abaixo do teto
+    // Alvos sobre 2.600,00: 1.300, 780 e 520. Faltam 300, 180 e 520; o último fica com o resto.
+    expect(s.ativos.map((a) => a.valor)).toEqual([30000, 18000, 52000])
+    expect(s.objetivos).toEqual([{ nome: 'Intercâmbio', valor: 500000 }, { nome: 'Reserva', valor: 400000 }])
+  })
+
+  it('guarda no fechamento o saldo de cada objetivo e lê os fechamentos antigos', () => {
+    const foto = fotoDoMes(p, '2026-12', 0, 0)
+    expect(foto.caixas).toEqual({ 'Intercâmbio': 1500000, Reserva: 4000000 })
+    const antigo = { mes: '2026-11', reserva: 3900000, carro: 100000, ape: 0, convexo: 150000, aAlocar: 0, aporte: 0, saidas: 0 }
+    const [primeira, segunda] = linhasDoHistorico([foto, antigo])
+    expect(primeira.total).toBe(4150000)
+    expect(valorNoHistorico(antigo, 'Carro')).toBe(100000)
+    expect(segunda.total).toBe(5700000)
+    expect(segunda.pctConvexo).toBeCloseTo(200000 / 1700000)
   })
 })
 
@@ -181,7 +243,7 @@ describe('histórico', () => {
   it('tira a foto das caixas e estima o rendimento do mês', () => {
     const anterior = { mes: '2026-10', reserva: 4700000, carro: 4250000, ape: 990000, convexo: 300000, aAlocar: 0, aporte: 0, saidas: 0 }
     const foto = fotoDoMes(p, '2026-11', 300000, 50000)
-    expect(foto).toMatchObject({ reserva: 4800000, carro: 4300000, ape: 1000000, convexo: 500000, aAlocar: 0 })
+    expect(foto).toMatchObject({ caixas: { Reserva: 4800000, Carro: 4300000, Apê: 1000000 }, convexo: 500000, aAlocar: 0 })
     const [primeira, segunda] = linhasDoHistorico([foto, anterior])
     expect(primeira.rendimento).toBeNull()
     expect(segunda.total).toBe(10600000)

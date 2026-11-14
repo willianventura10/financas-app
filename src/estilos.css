@@ -972,12 +972,15 @@ summary {
 /* ---------- Etapas 3 e 4: investimentos, metas e listas ---------- */
 
 :root {
-  /* Cores de categoria validadas, em ordem fixa: Reserva, Carro, Apê, Convexo, A alocar. */
+  /* Cores de categoria validadas, em ordem fixa: os objetivos (até seis), depois Convexo e A alocar. */
   --cor-1: #2a78d6;
   --cor-2: #eb6834;
   --cor-3: #1baf7a;
   --cor-4: #eda100;
   --cor-5: #e87ba4;
+  --cor-6: #008300;
+  --cor-7: #6250d6;
+  --cor-8: #e34948;
 }
 
 .cor-1 { background: var(--cor-1); }
@@ -985,6 +988,41 @@ summary {
 .cor-3 { background: var(--cor-3); }
 .cor-4 { background: var(--cor-4); }
 .cor-5 { background: var(--cor-5); }
+.cor-6 { background: var(--cor-6); }
+.cor-7 { background: var(--cor-7); }
+.cor-8 { background: var(--cor-8); }
+
+.objetivos li {
+  padding: 0.75rem 0 0.25rem;
+  border-top: 1px solid var(--linha);
+}
+
+.objetivos .grade {
+  margin: 0.5rem 0 0;
+}
+
+.objetivos .botoes {
+  margin: 0;
+}
+
+.objetivos small {
+  color: var(--tinta-2);
+}
+
+.itens .campo {
+  flex: 0 0 7rem;
+  margin-left: auto;
+}
+
+.opcoes h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 .visoes.quatro {
   grid-template-columns: repeat(4, 1fr);

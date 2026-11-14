@@ -1,4 +1,4 @@
-import type { Historico, Operacao, ParametrosInvest, Posicao } from '../dados/tipos'
+import type { AtivoConvexo, Historico, Objetivo, Operacao, ParametrosInvest, Posicao } from '../dados/tipos'
 
 // As regras das abas Painel, Posições, Histórico e Compras. Dinheiro em centavos; percentuais como frações.
 
@@ -38,32 +38,75 @@ export interface LinhaFgc {
   status: string
 }
 
+export const CONVEXO = 'Convexo'
+export const A_ALOCAR = 'A alocar'
+
+/** Os objetivos, na ordem do aporte. Sem lista gravada, valem os três que vieram da planilha. */
+export function objetivosDe(inv: ParametrosInvest): Objetivo[] {
+  return (
+    inv.objetivos ?? [
+      { id: 'reserva', nome: 'Reserva', meta: inv.metaReserva, data: null },
+      { id: 'carro', nome: 'Carro', meta: inv.metaCarro, data: inv.dataCarro, foraDoConvexo: true },
+      { id: 'ape', nome: 'Apê', meta: inv.metaApe, data: inv.dataApe },
+    ]
+  )
+}
+
+/** Os ativos que dividem o convexo em proporção. Sem lista gravada, WRLD11 e GOLD11 pelas classes da planilha. */
+export function ativosDe(inv: ParametrosInvest): AtivoConvexo[] {
+  return (
+    inv.ativosConvexo ?? [
+      { nome: 'WRLD11', alvo: inv.alvoWrld, classe: 'ETF global' },
+      { nome: 'GOLD11', alvo: 1 - inv.alvoWrld, classe: 'ETF ouro' },
+    ]
+  )
+}
+
+/** As caixas que uma posição pode ter: os objetivos, o convexo e o dinheiro a alocar. */
+export function caixasDe(inv: ParametrosInvest): string[] {
+  return [...objetivosDe(inv).map((o) => o.nome), CONVEXO, A_ALOCAR]
+}
+
+const mesmoNome = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+
+export interface LinhaAtivo {
+  nome: string
+  atual: number
+  /** Parte do ativo na soma dos ativos da proporção. */
+  pct: number | null
+  alvo: number
+  status: string
+}
+
 export interface Painel {
   total: number
-  semCarro: number
+  /** Patrimônio sem os objetivos que não contam para o convexo. */
+  baseConvexo: number
+  /** Nomes dos objetivos que ficam fora da base do convexo. */
+  foraDaBase: string[]
   aAlocar: number
   vencimentos: { quantidade: number; valor: number }
-  /** Reserva, Carro, Apê, Convexo e A alocar, nesta ordem. */
+  /** Os objetivos na ordem do aporte, depois Convexo e A alocar. */
   caixas: LinhaCaixa[]
-  /** Confere se toda posição tem uma das cinco caixas. */
+  /** Confere se toda posição tem uma das caixas. */
   statusTotal: string
   convexo: { atual: number; pct: number | null; alvo: number; status: string }
-  wrld: { atual: number; pct: number | null; alvo: number; status: string }
-  gold: { atual: number; pct: number | null; alvo: number; status: string }
-  acaoBr: { atual: number; pctDoPatrimonio: number | null; pctDoConvexo: number }
+  ativos: LinhaAtivo[]
+  /** O que está no convexo e não é um dos ativos da proporção. */
+  foraDaProporcao: { atual: number; pctDoConvexo: number }
   fgc: LinhaFgc[]
 }
 
 export function painel(posicoes: Posicao[], inv: ParametrosInvest, hoje: string): Painel {
-  const de = (campo: 'caixa' | 'classe', nome: string) =>
-    soma(posicoes.filter((p) => p[campo] === nome).map((p) => p.valor))
+  const daCaixa = (nome: string) => soma(posicoes.filter((p) => p.caixa === nome).map((p) => p.valor))
   const total = soma(posicoes.map((p) => p.valor))
-  const [reserva, carro, ape, convexo, aAlocar] = ['Reserva', 'Carro', 'Apê', 'Convexo', 'A alocar'].map((c) =>
-    de('caixa', c),
-  )
-  const semCarro = total - carro
-  const metaConvexo = Math.round(inv.alvoConvexo * semCarro)
-  const pctConvexo = semCarro === 0 ? null : convexo / semCarro
+  const objetivos = objetivosDe(inv)
+  const convexo = daCaixa(CONVEXO)
+  const aAlocar = daCaixa(A_ALOCAR)
+  const foraDaBase = objetivos.filter((o) => o.foraDoConvexo)
+  const baseConvexo = total - soma(foraDaBase.map((o) => daCaixa(o.nome)))
+  const metaConvexo = Math.round(inv.alvoConvexo * baseConvexo)
+  const pctConvexo = baseConvexo === 0 ? null : convexo / baseConvexo
 
   const statusConvexo =
     pctConvexo === null
@@ -83,12 +126,13 @@ export function painel(posicoes: Posicao[], inv: ParametrosInvest, hoje: string)
   })
   const simples = (atual: number, meta: number) => (atual >= meta ? 'OK' : 'Abaixo da meta')
 
-  const wrld = de('classe', 'ETF global')
-  const gold = de('classe', 'ETF ouro')
-  const acaoBr = de('classe', 'Ação BR')
-  const etf = (atual: number, alvo: number) => {
-    const pct = wrld + gold === 0 ? null : atual / (wrld + gold)
-    const diferenca = pct === null ? 0 : pct - alvo
+  const doAtivo = (a: AtivoConvexo) =>
+    soma(posicoes.filter((p) => (a.classe ? p.classe === a.classe : mesmoNome(p.nome, a.nome))).map((p) => p.valor))
+  const valores = ativosDe(inv).map((a) => ({ a, atual: doAtivo(a) }))
+  const naProporcao = soma(valores.map((v) => v.atual))
+  const ativos = valores.map(({ a, atual }): LinhaAtivo => {
+    const pct = naProporcao === 0 ? null : atual / naProporcao
+    const diferenca = pct === null ? 0 : pct - a.alvo
     const status =
       pct === null
         ? 'Ainda sem posição'
@@ -97,8 +141,9 @@ export function painel(posicoes: Posicao[], inv: ParametrosInvest, hoje: string)
           : diferenca < 0
             ? 'Abaixo: priorizar no aporte'
             : 'Acima: pausar aportes'
-    return { atual, pct, alvo, status }
-  }
+    return { nome: a.nome, atual, pct, alvo: a.alvo, status }
+  })
+  const fora = Math.max(0, convexo - naProporcao)
 
   const proximos = posicoes.filter((p) => {
     if (!p.vencimento) return false
@@ -126,32 +171,31 @@ export function painel(posicoes: Posicao[], inv: ParametrosInvest, hoje: string)
     }
   })
 
+  const caixas = [
+    ...objetivos.map((o) => {
+      const atual = daCaixa(o.nome)
+      // A caixa do carro vence em data marcada: passou de 105% da meta, a sobra pode mudar de caixa.
+      const status =
+        o.id === 'carro' && atual >= o.meta * 1.05
+          ? 'OK (o excedente pode ir para a reserva ao vencer)'
+          : simples(atual, o.meta)
+      return caixa(o.nome, atual, o.meta, status)
+    }),
+    caixa(CONVEXO, convexo, metaConvexo, statusConvexo),
+    caixa(A_ALOCAR, aAlocar, null, aAlocar > 0 ? 'Distribuir (veja a sugestão)' : 'OK'),
+  ]
+
   return {
     total,
-    semCarro,
+    baseConvexo,
+    foraDaBase: foraDaBase.map((o) => o.nome),
     aAlocar,
     vencimentos: { quantidade: proximos.length, valor: soma(proximos.map((p) => p.valor)) },
-    caixas: [
-      caixa('Reserva', reserva, inv.metaReserva, simples(reserva, inv.metaReserva)),
-      caixa(
-        'Carro',
-        carro,
-        inv.metaCarro,
-        carro >= inv.metaCarro * 1.05 ? 'OK (o excedente pode ir para a reserva ao vencer)' : simples(carro, inv.metaCarro),
-      ),
-      caixa('Apê', ape, inv.metaApe, simples(ape, inv.metaApe)),
-      caixa('Convexo', convexo, metaConvexo, statusConvexo),
-      caixa('A alocar', aAlocar, null, aAlocar > 0 ? 'Distribuir (veja a sugestão)' : 'OK'),
-    ],
-    statusTotal: reserva + carro + ape + convexo + aAlocar === total ? 'OK' : 'ATENÇÃO: há posição sem caixa',
+    caixas,
+    statusTotal: soma(caixas.map((c) => c.atual)) === total ? 'OK' : 'ATENÇÃO: há posição sem caixa',
     convexo: { atual: convexo, pct: pctConvexo, alvo: inv.alvoConvexo, status: statusConvexo },
-    wrld: etf(wrld, inv.alvoWrld),
-    gold: etf(gold, 1 - inv.alvoWrld),
-    acaoBr: {
-      atual: acaoBr,
-      pctDoPatrimonio: semCarro === 0 ? null : acaoBr / semCarro,
-      pctDoConvexo: convexo === 0 ? 0 : acaoBr / convexo,
-    },
+    ativos,
+    foraDaProporcao: { atual: fora, pctDoConvexo: convexo === 0 ? 0 : fora / convexo },
     fgc,
   }
 }
@@ -160,52 +204,51 @@ export interface Sugestao {
   /** Aporte novo + caixa "A alocar". */
   total: number
   convexo: number
-  wrld: number
-  gold: number
-  /** Cotas inteiras; null enquanto o preço não foi informado. */
-  cotasWrld: number | null
-  cotasGold: number | null
-  reserva: number
-  carro: number
-  ape: number
+  /** A parte do convexo para cada ativo da proporção. Cotas inteiras; null enquanto o preço não foi informado. */
+  ativos: { nome: string; valor: number; cotas: number | null }[]
+  /** O que vai para cada objetivo, na ordem da lista. */
+  objetivos: { nome: string; valor: number }[]
+  /** Só sobra dinheiro quando não há objetivo nenhum. */
+  sobra: number
 }
 
 /**
  * "Sugestão para o aporte do mês": 1º convexo (até a meta, limitado ao teto mensal; depois, % alvo do aporte),
- * 2º reserva até a meta, 3º caixa do carro até a meta, 4º fundo do apê com o resto.
+ * depois cada objetivo até a meta, na ordem da lista; o último fica com o resto.
  */
 export function sugestaoDeAporte(
   p: Painel,
   inv: ParametrosInvest,
   aporteNovo: number,
-  precoWrld: number | null,
-  precoGold: number | null,
+  precos: Record<string, number | null | undefined> = {},
 ): Sugestao {
-  const [reserva, carro, , convexo] = p.caixas
+  const convexo = p.caixas.find((c) => c.nome === CONVEXO)!
+  const objetivos = p.caixas.filter((c) => c.nome !== CONVEXO && c.nome !== A_ALOCAR)
   const total = aporteNovo + p.aAlocar
   const paraConvexo =
     total <= 0 || convexo.status === 'Acima: colher'
       ? 0
       : Math.min(total, inv.tetoConvexo, Math.max(convexo.falta, Math.round(inv.alvoConvexo * total)))
-  // Vai primeiro para o ETF que está abaixo da proporção.
-  const wrld = Math.min(
-    paraConvexo,
-    Math.max(0, Math.round((p.wrld.atual + p.gold.atual + paraConvexo) * inv.alvoWrld) - p.wrld.atual),
-  )
-  const gold = paraConvexo - wrld
-  const paraReserva = Math.min(total - paraConvexo, reserva.falta)
-  const paraCarro = Math.min(total - paraConvexo - paraReserva, carro.falta)
-  return {
-    total,
-    convexo: paraConvexo,
-    wrld,
-    gold,
-    cotasWrld: precoWrld ? Math.floor(wrld / precoWrld) : null,
-    cotasGold: precoGold ? Math.floor(gold / precoGold) : null,
-    reserva: paraReserva,
-    carro: paraCarro,
-    ape: total - paraConvexo - paraReserva - paraCarro,
-  }
+
+  // Vai primeiro para o ativo que está abaixo da proporção; o último fica com o resto.
+  const naProporcao = soma(p.ativos.map((a) => a.atual))
+  let resta = paraConvexo
+  const ativos = p.ativos.map((a, i) => {
+    const falta = Math.max(0, Math.round((naProporcao + paraConvexo) * a.alvo) - a.atual)
+    const valor = i === p.ativos.length - 1 ? resta : Math.min(resta, falta)
+    resta -= valor
+    const preco = precos[a.nome]
+    return { nome: a.nome, valor, cotas: preco ? Math.floor(valor / preco) : null }
+  })
+
+  resta = total - paraConvexo
+  const paraObjetivos = objetivos.map((o, i) => {
+    const valor = i === objetivos.length - 1 ? resta : Math.min(resta, o.falta)
+    resta -= valor
+    return { nome: o.nome, valor }
+  })
+
+  return { total, convexo: paraConvexo, ativos, objetivos: paraObjetivos, sobra: resta }
 }
 
 export interface ResumoAtivo {
@@ -240,29 +283,52 @@ export function resumoPorAtivo(operacoes: Operacao[], hoje: string): ResumoAtivo
   })
 }
 
+/** Os nomes antigos das três caixas que o histórico guardava em campos próprios. */
+const ANTIGAS: Record<string, 'reserva' | 'carro' | 'ape'> = { Reserva: 'reserva', Carro: 'carro', Apê: 'ape' }
+
+/** Quanto um objetivo tinha no fechamento do mês. */
+export function valorNoHistorico(h: Historico, nome: string): number {
+  return h.caixas ? (h.caixas[nome] ?? 0) : ((ANTIGAS[nome] && h[ANTIGAS[nome]]) ?? 0)
+}
+
+/** Os objetivos que aparecem em um fechamento, na ordem em que foram gravados. */
+export function objetivosNoHistorico(h: Historico): string[] {
+  return h.caixas ? Object.keys(h.caixas) : Object.keys(ANTIGAS)
+}
+
 export interface LinhaHistorico extends Historico {
   total: number
   /** Total − total do mês anterior − aporte + saídas; null no primeiro mês. */
   rendimento: number | null
-  /** Convexo ÷ (total − Carro). */
+  /** Convexo ÷ patrimônio sem os objetivos que não contam para o convexo. */
   pctConvexo: number | null
 }
 
 export function linhasDoHistorico(historico: Historico[]): LinhaHistorico[] {
   const ordenado = [...historico].sort((a, b) => a.mes.localeCompare(b.mes))
-  const total = (h: Historico) => h.reserva + h.carro + h.ape + h.convexo + h.aAlocar
+  const total = (h: Historico) =>
+    soma(objetivosNoHistorico(h).map((nome) => valorNoHistorico(h, nome))) + h.convexo + h.aAlocar
+  const base = (h: Historico) => total(h) - (h.caixas ? (h.foraDoConvexo ?? 0) : (h.carro ?? 0))
   return ordenado.map((h, i) => ({
     ...h,
     total: total(h),
     rendimento: i === 0 ? null : total(h) - total(ordenado[i - 1]) - h.aporte + h.saidas,
-    pctConvexo: total(h) - h.carro === 0 ? null : h.convexo / (total(h) - h.carro),
+    pctConvexo: base(h) === 0 ? null : h.convexo / base(h),
   }))
 }
 
 /** A "Linha para o Histórico" do Painel: a foto das caixas no fechamento do mês. */
 export function fotoDoMes(p: Painel, mes: string, aporte: number, saidas: number): Historico {
-  const [reserva, carro, ape, convexo, aAlocar] = p.caixas.map((c) => c.atual)
-  return { mes, reserva, carro, ape, convexo, aAlocar, aporte, saidas }
+  const objetivos = p.caixas.filter((c) => c.nome !== CONVEXO && c.nome !== A_ALOCAR)
+  return {
+    mes,
+    caixas: Object.fromEntries(objetivos.map((c) => [c.nome, c.atual])),
+    foraDoConvexo: p.total - p.baseConvexo,
+    convexo: p.convexo.atual,
+    aAlocar: p.aAlocar,
+    aporte,
+    saidas,
+  }
 }
 
 /** Cor do aviso, pelas mesmas palavras que a planilha usava na formatação. */

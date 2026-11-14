@@ -62,7 +62,31 @@ export interface Config {
 }
 
 /** A aba Metas da planilha de investimentos. Percentuais são frações: 0,12 = 12%. */
+/** Uma meta em reais, com caixa própria nas posições. A ordem da lista é a ordem do aporte. */
+export interface Objetivo {
+  id: string
+  /** É também o nome da caixa nas posições. */
+  nome: string
+  meta: number
+  data: string | null
+  /** O saldo deste objetivo fica fora do patrimônio que serve de base para o convexo. */
+  foraDoConvexo?: boolean
+}
+
+/** Um ativo que divide o convexo em proporção com os outros da lista. */
+export interface AtivoConvexo {
+  /** O nome da posição, como WRLD11. */
+  nome: string
+  alvo: number
+  /** Só na lista que veio da planilha, que achava o ativo pela classe da posição. */
+  classe?: string
+}
+
 export interface ParametrosInvest {
+  /** Sem esta lista, valem Reserva, Carro e Apê com as metas e datas dos campos abaixo. */
+  objetivos?: Objetivo[]
+  /** Sem esta lista, valem WRLD11 e GOLD11 na proporção de alvoWrld. */
+  ativosConvexo?: AtivoConvexo[]
   metaReserva: number
   metaReservaFinal: number
   metaCarro: number
@@ -114,9 +138,13 @@ export interface Operacao {
 /** Foto do patrimônio por caixa no fechamento de um mês. */
 export interface Historico {
   mes: string
-  reserva: number
-  carro: number
-  ape: number
+  /** Saldo de cada objetivo, pelo nome. Os fechamentos antigos usam reserva, carro e ape. */
+  caixas?: Record<string, number>
+  /** Soma dos objetivos que não contam para o convexo. */
+  foraDoConvexo?: number
+  reserva?: number
+  carro?: number
+  ape?: number
   convexo: number
   aAlocar: number
   aporte: number

@@ -1,6 +1,7 @@
 import type { DocParaImportar, Historico, Lancamento, MesDoc, Operacao, Posicao } from '../dados/tipos'
 import { nomeDaCategoria } from './categorias'
 import { hoje } from './datas'
+import { objetivosNoHistorico, valorNoHistorico } from './investimentos'
 
 type Celula = { value: string | number | null; type?: typeof Number; format?: string; fontWeight?: 'bold' }
 
@@ -22,6 +23,7 @@ export function montarPlanilhas(docs: DocParaImportar[]): { sheet: string; data:
   const posicoes = daColecao<Posicao>(docs, 'posicoes').sort((a, b) => a.ordem - b.ordem)
   const operacoes = daColecao<Operacao>(docs, 'operacoes').sort((a, b) => a.data.localeCompare(b.data))
   const historico = daColecao<Historico>(docs, 'historico').sort((a, b) => a.mes.localeCompare(b.mes))
+  const objetivosDoHistorico = [...new Set(historico.flatMap(objetivosNoHistorico))]
 
   return [
     {
@@ -89,12 +91,10 @@ export function montarPlanilhas(docs: DocParaImportar[]): { sheet: string; data:
     {
       sheet: 'Histórico',
       data: [
-        cabecalho('Mês', 'Reserva', 'Carro', 'Apê', 'Convexo', 'A alocar', 'Aporte', 'Saídas'),
+        cabecalho('Mês', ...objetivosDoHistorico, 'Convexo', 'A alocar', 'Aporte', 'Saídas'),
         ...historico.map((h) => [
           texto(h.mes),
-          reais(h.reserva),
-          reais(h.carro),
-          reais(h.ape),
+          ...objetivosDoHistorico.map((nome) => reais(valorNoHistorico(h, nome))),
           reais(h.convexo),
           reais(h.aAlocar),
           reais(h.aporte),

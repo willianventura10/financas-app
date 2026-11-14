@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Resultado } from '../componentes'
-import type { Config, DocParaImportar, Lista, Viagem } from '../dados/tipos'
+import type { Config, DocParaImportar, Lista, Posicao, Viagem } from '../dados/tipos'
 import { exportarBackup, exportarExcel } from '../lib/exportar'
 import { Guia } from './Guia'
 import { Listas } from './Listas'
@@ -14,6 +14,7 @@ import { useInstalar } from '../instalar'
 interface Props {
   email: string | null
   viagens: Viagem[]
+  posicoes: Posicao[]
   /** Ano do mês selecionado no topo: a lista de viagens mostra só ele. */
   ano: string
   caixinhaViagem: number
@@ -50,7 +51,7 @@ export function Mais(props: Props) {
       {secao === 'viagens' && <Viagens {...props} />}
       {secao === 'metas' &&
         (props.config ? (
-          <Metas config={props.config} aoGravar={(c) => props.aoGravar('config/geral', c)} />
+          <Metas config={props.config} posicoes={props.posicoes} aoGravar={(c) => props.aoGravar('config/geral', c)} />
         ) : (
           <section className="vazio">
             <h2>Ainda não há metas</h2>

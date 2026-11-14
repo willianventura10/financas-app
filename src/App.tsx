@@ -220,6 +220,7 @@ function Principal({ usuario }: { usuario: User | null }) {
             <Mais
               email={usuario?.email ?? null}
               viagens={viagens}
+              posicoes={posicoes}
               ano={ano}
               caixinhaViagem={caixinha}
               aoGravar={gravar}

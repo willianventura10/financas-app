@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { CampoNumero, CampoValor, Resultado } from '../componentes'
-import type { Config, ParametrosInvest } from '../dados/tipos'
+import type { Config, ParametrosInvest, Posicao } from '../dados/tipos'
 import { metaTotal } from '../lib/calculos'
 import { CATEGORIAS } from '../lib/categorias'
+import { AtivosDoConvexo, Objetivos, OpcoesDasPosicoes } from './MetasInvest'
 
 const POUPANCA: [string, string][] = [
   ['reservaMensal', 'Reserva por mês'],
@@ -16,10 +17,7 @@ const POUPANCA: [string, string][] = [
 ]
 
 const VALORES_INVEST: [keyof ParametrosInvest, string][] = [
-  ['metaReserva', 'Meta da reserva, vigente'],
   ['metaReservaFinal', 'Meta final da reserva'],
-  ['metaCarro', 'Meta da caixa do carro'],
-  ['metaApe', 'Meta do fundo do apê'],
   ['aporteMensal', 'Aporte mensal previsto'],
   ['tetoConvexo', 'Teto mensal para o convexo'],
   ['limiteFgc', 'Limite do FGC por instituição'],
@@ -29,12 +27,11 @@ const PERCENTUAIS: [keyof ParametrosInvest, string][] = [
   ['alvoConvexo', 'Alvo do lado convexo'],
   ['minConvexo', 'Faixa mínima do convexo'],
   ['maxConvexo', 'Faixa máxima do convexo'],
-  ['alvoWrld', 'WRLD11 dentro do convexo'],
   ['tolerancia', 'Tolerância da proporção'],
 ]
 
 /** As metas da aba Mensal e a aba Metas da planilha de investimentos, editáveis. */
-export function Metas({ config, aoGravar }: { config: Config; aoGravar: (config: Config) => void }) {
+export function Metas({ config, posicoes, aoGravar }: { config: Config; posicoes: Posicao[]; aoGravar: (config: Config) => void }) {
   const [novaConta, setNovaConta] = useState('')
   const [token, setToken] = useState(config.brapiToken ?? '')
   const inv = config.investimentos
@@ -117,7 +114,7 @@ export function Metas({ config, aoGravar }: { config: Config; aoGravar: (config:
 
       {inv && (
         <section className="bloco">
-          <h2>Investimentos</h2>
+          <h2>Parâmetros dos investimentos</h2>
           <div className="grade">
             {VALORES_INVEST.map(([chave, rotulo]) => (
               <CampoValor
@@ -141,17 +138,15 @@ export function Metas({ config, aoGravar }: { config: Config; aoGravar: (config:
               valor={inv.alertaVencimentoDias}
               aoMudar={(v) => mudarInv({ alertaVencimentoDias: Math.round(v) })}
             />
-            <label className="campo">
-              Compra do carro
-              <input type="date" value={inv.dataCarro ?? ''} onChange={(e) => mudarInv({ dataCarro: e.target.value || null })} />
-            </label>
-            <label className="campo">
-              Compra do apê
-              <input type="date" value={inv.dataApe ?? ''} onChange={(e) => mudarInv({ dataApe: e.target.value || null })} />
-            </label>
           </div>
-          <p className="apoio">GOLD11 fica com o que sobra de WRLD11 dentro do convexo.</p>
         </section>
+      )}
+      {inv && (
+        <>
+          <Objetivos inv={inv} posicoes={posicoes} mudarInv={mudarInv} />
+          <AtivosDoConvexo inv={inv} posicoes={posicoes} mudarInv={mudarInv} />
+          <OpcoesDasPosicoes inv={inv} posicoes={posicoes} mudarInv={mudarInv} />
+        </>
       )}
 
       <section className="bloco">

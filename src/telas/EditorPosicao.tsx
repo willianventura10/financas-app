@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { ParametrosInvest, Posicao } from '../dados/tipos'
 import { lerCentavos, numero } from '../lib/dinheiro'
+import { caixasDe } from '../lib/investimentos'
 
 interface Props {
   inicial?: Posicao
@@ -21,7 +22,7 @@ export function EditorPosicao({ inicial, ordem, inv, aoSalvar, aoExcluir, aoFech
       nome: '',
       instituicao: inv.instituicoes[0] ?? '',
       classe: inv.classes[0] ?? '',
-      caixa: inv.caixas[0] ?? '',
+      caixa: caixasDe(inv)[0],
       valor: 0,
       rentabilidade: '',
       vencimento: null,
@@ -68,7 +69,7 @@ export function EditorPosicao({ inicial, ordem, inv, aoSalvar, aoExcluir, aoFech
         <div className="grade">
           {escolha('Instituição', 'instituicao', inv.instituicoes)}
           {escolha('Classe', 'classe', inv.classes)}
-          {escolha('Caixa', 'caixa', inv.caixas)}
+          {escolha('Caixa', 'caixa', caixasDe(inv))}
           {escolha('Liquidez', 'liquidez', inv.liquidez)}
           <label className="campo">
             Valor atual

@@ -8,9 +8,11 @@ import {
   diasAte,
   fotoDoMes,
   linhasDoHistorico,
+  objetivosNoHistorico,
   painel as calcularPainel,
   resumoPorAtivo,
   sugestaoDeAporte,
+  valorNoHistorico,
   type Painel,
 } from '../lib/investimentos'
 import { EditorPosicao } from './EditorPosicao'
@@ -66,9 +68,10 @@ export function Investimentos(props: Props) {
 
 function VisaoPainel({ p, inv, config }: { p: Painel; inv: ParametrosInvest; config: Config }) {
   const [aporte, setAporte] = useState<number | null>(null)
-  const [precoWrld, setPrecoWrld] = useState<number | null>(config.cotacoes?.WRLD11?.preco ?? null)
-  const [precoGold, setPrecoGold] = useState<number | null>(config.cotacoes?.GOLD11?.preco ?? null)
-  const s = sugestaoDeAporte(p, inv, aporte ?? 0, precoWrld, precoGold)
+  // Preço digitado aqui vale sobre a cotação guardada.
+  const [digitados, setDigitados] = useState<Record<string, number | null>>({})
+  const preco = (ativo: string) => (ativo in digitados ? digitados[ativo] : (config.cotacoes?.[ativo]?.preco ?? null))
+  const s = sugestaoDeAporte(p, inv, aporte ?? 0, Object.fromEntries(p.ativos.map((a) => [a.nome, preco(a.nome)])))
   const cotas = (n: number | null) => (n === null ? 'informe o preço' : `${n} ${n === 1 ? 'cota' : 'cotas'}`)
 
   return (
@@ -76,7 +79,11 @@ function VisaoPainel({ p, inv, config }: { p: Painel; inv: ParametrosInvest; con
       <section className="total-mes">
         <h2>Patrimônio total</h2>
         <p className="valor-grande">{reais(p.total)}</p>
-        <p className="apoio">Sem a caixa do carro: {reais(p.semCarro)}</p>
+        {p.foraDaBase.length > 0 && (
+          <p className="apoio">
+            Base do convexo, sem {p.foraDaBase.join(', ')}: {reais(p.baseConvexo)}
+          </p>
+        )}
       </section>
 
       {(p.vencimentos.quantidade > 0 || p.statusTotal !== 'OK') && (
@@ -129,9 +136,8 @@ function VisaoPainel({ p, inv, config }: { p: Painel; inv: ParametrosInvest; con
         <h2>Lado convexo</h2>
         <ul className="razao">
           {[
-            { nome: 'Convexo no patrimônio sem carro', l: p.convexo },
-            { nome: 'WRLD11 dentro do convexo', l: p.wrld },
-            { nome: 'GOLD11 dentro do convexo', l: p.gold },
+            { nome: 'Convexo na base do patrimônio', l: p.convexo },
+            ...p.ativos.map((a) => ({ nome: `${a.nome} dentro do convexo`, l: a })),
           ].map(({ nome, l }) => (
             <li key={nome}>
               <div className="linha-razao">
@@ -144,13 +150,15 @@ function VisaoPainel({ p, inv, config }: { p: Painel; inv: ParametrosInvest; con
               <Status texto={l.status} />
             </li>
           ))}
-          <li>
-            <div className="linha-razao">
-              <span>Ação BR, fora da proporção</span>
-              <span className="num">{reais(p.acaoBr.atual)}</span>
-            </div>
-            <p className="apoio">Aposta: {porcento(p.acaoBr.pctDoConvexo)} do convexo.</p>
-          </li>
+          {p.foraDaProporcao.atual > 0 && (
+            <li>
+              <div className="linha-razao">
+                <span>Fora da proporção</span>
+                <span className="num">{reais(p.foraDaProporcao.atual)}</span>
+              </div>
+              <p className="apoio">Aposta: {porcento(p.foraDaProporcao.pctDoConvexo)} do convexo.</p>
+            </li>
+          )}
         </ul>
       </section>
 
@@ -179,16 +187,24 @@ function VisaoPainel({ p, inv, config }: { p: Painel; inv: ParametrosInvest; con
         <h2>Sugestão para o aporte do mês</h2>
         <div className="grade">
           <CampoValor rotulo="Aporte novo" valor={aporte} aoMudar={setAporte} ajuda="Deixe vazio se o dinheiro já está em A alocar." />
-          <CampoValor rotulo="Preço de WRLD11" valor={precoWrld} aoMudar={setPrecoWrld} />
-          <CampoValor rotulo="Preço de GOLD11" valor={precoGold} aoMudar={setPrecoGold} />
+          {p.ativos.map((a) => (
+            <CampoValor
+              key={a.nome}
+              rotulo={`Preço de ${a.nome}`}
+              valor={preco(a.nome)}
+              aoMudar={(v) => setDigitados({ ...digitados, [a.nome]: v })}
+            />
+          ))}
         </div>
         <Resultado rotulo="Total a distribuir" valor={s.total} forte />
         <Resultado rotulo="Lado convexo" valor={s.convexo} />
-        <Resultado rotulo={`WRLD11, ${cotas(s.cotasWrld)}`} valor={s.wrld} />
-        <Resultado rotulo={`GOLD11, ${cotas(s.cotasGold)}`} valor={s.gold} />
-        <Resultado rotulo="Reserva" valor={s.reserva} />
-        <Resultado rotulo="Caixa do carro" valor={s.carro} />
-        <Resultado rotulo="Fundo do apê" valor={s.ape} />
+        {s.ativos.map((a) => (
+          <Resultado key={a.nome} rotulo={`${a.nome}, ${cotas(a.cotas)}`} valor={a.valor} />
+        ))}
+        {s.objetivos.map((o) => (
+          <Resultado key={o.nome} rotulo={o.nome} valor={o.valor} />
+        ))}
+        {s.sobra > 0 && <Resultado rotulo="Sem destino: crie um objetivo em Mais › Metas" valor={s.sobra} />}
         <p className="apoio">Compre em cotas inteiras. A sobra do arredondamento fica para o mês seguinte.</p>
       </section>
     </>
@@ -455,9 +471,7 @@ function VisaoHistorico({ historico, mes, p, aoGravar }: Props & { p: Painel }) 
               </div>
               <Composicao
                 partes={[
-                  { nome: 'Reserva', valor: h.reserva },
-                  { nome: 'Carro', valor: h.carro },
-                  { nome: 'Apê', valor: h.ape },
+                  ...objetivosNoHistorico(h).map((nome) => ({ nome, valor: valorNoHistorico(h, nome) })),
                   { nome: 'Convexo', valor: h.convexo },
                   { nome: 'A alocar', valor: h.aAlocar },
                 ]}
@@ -465,7 +479,7 @@ function VisaoHistorico({ historico, mes, p, aoGravar }: Props & { p: Painel }) 
               <p className="apoio">
                 Aporte {numero(h.aporte)}, saídas {numero(h.saidas)}, rendimento estimado{' '}
                 {h.rendimento === null ? 'sem mês anterior' : numero(h.rendimento)}
-                {h.pctConvexo !== null && `, convexo em ${porcento(h.pctConvexo)} do patrimônio sem carro`}.
+                {h.pctConvexo !== null && `, convexo em ${porcento(h.pctConvexo)} da base do patrimônio`}.
               </p>
               {h.obs && <p className="apoio">{h.obs}</p>}
             </li>

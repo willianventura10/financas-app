@@ -52,10 +52,12 @@ const GUIA: Capitulo[] = [
         ],
       },
       {
-        titulo: 'Alimentação, "Comi na rua" e "Pago fora do cartão"',
+        titulo: '"Comi na rua" e "Abater da fatura"',
         texto: [
           '"Comi na rua" é Alimentação com uma marca: soma no total de Alimentação e também aparece separado.',
-          'Em Alimentação e Comi na rua existe a caixinha "Pago fora do cartão". Deixe desmarcada quando pagar no cartão; marque quando pagar de outro jeito. Ela só muda a conta do cartão, não o total do mês.',
+          'Todo gasto tem a caixinha "Abater da fatura". Marque quando o gasto foi pago no cartão: ele sai da fatura do mês, porque já está na categoria dele.',
+          'Ela vem marcada em Alimentação, Comi na rua, Viagens e Transporte, e desmarcada nas outras categorias. Você pode mudar em qualquer lançamento.',
+          'A marca só muda a conta do cartão, não o total do mês.',
         ],
       },
       {
@@ -77,15 +79,18 @@ const GUIA: Capitulo[] = [
       {
         titulo: 'Cartão: fatura, semanas e cartão atualizado',
         texto: [
-          'Digite a Fatura e, se houver, o valor de Saúde, academia e celular que veio nela.',
+          'Digite a Fatura. O que sai dela são os lançamentos marcados com "Abater da fatura".',
           'A tabela de Alimentação no cartão tem uma linha por semana do calendário, de domingo a sábado:',
-          '- Lançado: soma automática da Alimentação com data naquela semana, sem o que foi marcado como pago fora do cartão.',
+          '- Lançado: soma automática da Alimentação daquela semana marcada para abater.',
           '- Ajuste: valor que você digita para corrigir, positivo ou negativo.',
           '- Total: lançado mais ajuste.',
-          '"Uber, viagens e saídas" é a soma das categorias Viagens e Transporte do mês.',
+          '"Demais lançamentos abatidos" soma os gastos marcados das outras categorias.',
+          '"Ver o que foi abatido" lista todos os lançamentos marcados no mês. Toque num deles para abrir e desmarcar.',
+          'Em "Ajustes manuais" ficam as correções no total a abater e na fatura.',
+          'Até novembro de 2026 existe o campo "Saúde, academia e celular", digitado à mão. De dezembro em diante, marque "Abater da fatura" no próprio lançamento.',
           '"Abater deste mês" soma tudo isso. "Cartão atualizado" é a fatura menos o valor a abater: é o que sobra da fatura e ainda não está em nenhuma categoria.',
           'O botão "Lançar em Cartão" cria esse valor como gasto na categoria Cartão do mês seguinte.',
-          'Gastos vindos da planilha não têm dia, então não entram no Lançado. Nesses meses vale o que está no Ajuste.',
+          'Nos gastos antigos, sem a marca gravada, vale a regra anterior: Viagens e Transporte abatem, e a Alimentação abate só se tiver dia. Gastos vindos da planilha não têm dia; nesses meses vale o que está no Ajuste.',
         ],
       },
       {

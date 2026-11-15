@@ -1,8 +1,9 @@
 import { CampoValor, Resultado } from '../componentes'
 import type { Cartao, Config, Lancamento, MesDoc } from '../dados/tipos'
 import { CARTAO_VAZIO, resumoDoCartao, resumoDoMes, semanasDoMes } from '../lib/calculos'
-import { nomeDoMes, somarMes } from '../lib/datas'
-import { numero } from '../lib/dinheiro'
+import { nomeDaCategoria } from '../lib/categorias'
+import { diaMes, nomeDoMes, somarMes } from '../lib/datas'
+import { numero, reais } from '../lib/dinheiro'
 
 interface Props {
   itens: Lancamento[]
@@ -10,10 +11,14 @@ interface Props {
   config: Config
   aoGravar: (mes: MesDoc) => void
   aoLancarCartao: (valor: number) => void
+  aoAbrir: (l: Lancamento) => void
 }
 
+/** Daqui para frente, saúde, academia e celular são abatidos pela marca do próprio lançamento. */
+const ULTIMO_MES_COM_SAUDE = '2026-11'
+
 /** Renda e destinações, contas pagas e conciliação do cartão: as linhas 35 a 67 da aba Mensal. */
-export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: Props) {
+export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao, aoAbrir }: Props) {
   const resumo = resumoDoMes(itens, mesDoc, config)
   const cartao = mesDoc.cartao ?? CARTAO_VAZIO
   const fatura = resumoDoCartao(itens, cartao, mesDoc.mes)
@@ -64,11 +69,13 @@ export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: P
         <h2>Cartão</h2>
         <div className="grade">
           <CampoValor rotulo="Fatura" valor={cartao.fatura} aoMudar={(v) => mudarCartao({ fatura: v })} />
-          <CampoValor
-            rotulo="Saúde, academia e celular"
-            valor={cartao.saudeAcademia}
-            aoMudar={(v) => mudarCartao({ saudeAcademia: v ?? 0 })}
-          />
+          {(mesDoc.mes <= ULTIMO_MES_COM_SAUDE || cartao.saudeAcademia !== 0) && (
+            <CampoValor
+              rotulo="Saúde, academia e celular"
+              valor={cartao.saudeAcademia}
+              aoMudar={(v) => mudarCartao({ saudeAcademia: v ?? 0 })}
+            />
+          )}
         </div>
         <table className="tabela semanas">
           <thead>
@@ -101,13 +108,40 @@ export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: P
           </tbody>
         </table>
         <p className="apoio">
-          Lançado é a Alimentação com data naquela semana, sem o que foi marcado como pago fora do cartão.
+          Lançado é a Alimentação daquela semana marcada para abater da fatura.
         </p>
+        <details>
+          <summary>
+            Ver o que foi abatido ({fatura.abatidos.length === 1 ? '1 lançamento' : `${fatura.abatidos.length} lançamentos`})
+          </summary>
+          {fatura.abatidos.length === 0 ? (
+            <p className="apoio">Nenhum lançamento deste mês está marcado para abater da fatura.</p>
+          ) : (
+            <>
+              <ul className="lancamentos">
+                {fatura.abatidos.map((l) => (
+                  <li key={l.id}>
+                    <button onClick={() => aoAbrir(l)}>
+                      <span className="quando num">{l.data ? diaMes(l.data) : 'sem dia'}</span>
+                      <span className="oque">
+                        {l.comiNaRua ? 'Comi na rua' : nomeDaCategoria(l.categoria)}
+                        {l.obs && <small>{l.obs}</small>}
+                      </span>
+                      <span className="num">{reais(l.valor)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <Resultado rotulo="Total dos lançamentos abatidos" valor={fatura.abatidos.reduce((s, l) => s + l.valor, 0)} />
+              <p className="apoio">Toque num lançamento para abrir e desmarcar "Abater da fatura".</p>
+            </>
+          )}
+        </details>
         <details>
           <summary>Ajustes manuais</summary>
           <div className="grade">
             <CampoValor
-              rotulo="Em uber, viagens e saídas"
+              rotulo="Nos demais lançamentos abatidos"
               valor={cartao.ajusteUber}
               aoMudar={(v) => mudarCartao({ ajusteUber: v ?? 0 })}
               negativo
@@ -126,7 +160,7 @@ export function GastosMes({ itens, mesDoc, config, aoGravar, aoLancarCartao }: P
             />
           </div>
         </details>
-        <Resultado rotulo="Uber, viagens e saídas" valor={fatura.uber} />
+        <Resultado rotulo="Demais lançamentos abatidos" valor={fatura.uber} />
         <Resultado rotulo="Abater deste mês" valor={fatura.abater} />
         <Resultado rotulo="Cartão atualizado" valor={fatura.atualizado} forte />
         {fatura.atualizado !== null && (

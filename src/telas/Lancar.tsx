@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { Lancamento } from '../dados/tipos'
+import { abateDaFatura, abatePorPadrao } from '../lib/calculos'
 import { CATEGORIAS, type CategoriaId } from '../lib/categorias'
 import { hoje, mesDe } from '../lib/datas'
 import { lerCentavos } from '../lib/dinheiro'
@@ -31,8 +32,10 @@ export function Lancar({ inicial, aoSalvar, aoExcluir, aoFechar }: Props) {
   )
   const [data, setData] = useState(inicial ? (inicial.data ?? '') : hoje())
   const [obs, setObs] = useState(inicial?.obs ?? '')
-  const [foraDoCartao, setForaDoCartao] = useState(inicial?.foraDoCartao ?? false)
-  const alimentacao = escolha === 'alim' || escolha === 'rua'
+  const categoria = escolha === 'rua' ? 'alim' : escolha
+  // Sem escolha feita na caixinha, um gasto novo segue o padrão da categoria.
+  const [marcado, setMarcado] = useState<boolean | null>(inicial ? abateDaFatura(inicial) : null)
+  const abater = marcado ?? abatePorPadrao(categoria)
   const [erro, setErro] = useState('')
 
   function salvar(e: FormEvent) {
@@ -49,9 +52,9 @@ export function Lancar({ inicial, aoSalvar, aoExcluir, aoFechar }: Props) {
         mes: data ? mesDe(data) : inicial!.mes,
         data: data || null,
         valor: centavos,
-        categoria: escolha === 'rua' ? 'alim' : escolha,
+        categoria,
         comiNaRua: escolha === 'rua' || undefined,
-        foraDoCartao: (alimentacao && foraDoCartao) || undefined,
+        abater: categoria === 'cartao' ? undefined : abater,
         obs: obs.trim() || undefined,
         criadoEm: inicial?.criadoEm ?? agora,
         editadoEm: agora,
@@ -108,10 +111,10 @@ export function Lancar({ inicial, aoSalvar, aoExcluir, aoFechar }: Props) {
           </label>
         </div>
 
-        {alimentacao && (
+        {categoria !== 'cartao' && (
           <label className="marcar">
-            <input type="checkbox" checked={foraDoCartao} onChange={(e) => setForaDoCartao(e.target.checked)} />
-            Pago fora do cartão
+            <input type="checkbox" checked={abater} onChange={(e) => setMarcado(e.target.checked)} />
+            Abater da fatura
           </label>
         )}
 

@@ -79,6 +79,24 @@ describe('cartão', () => {
     expect(r.abater).toBe(10000 + 100) // lançado + ajuste da semana
   })
 
+  it('segue a marca "Abater da fatura" de cada lançamento, em qualquer categoria', () => {
+    const doMes = [
+      gasto('2026-12', 'saude', 4000, { data: '2026-12-02', abater: true }),
+      gasto('2026-12', 'saude', 6000, { data: '2026-12-03', abater: false }),
+      gasto('2026-12', 'transporte', 1500, { data: '2026-12-04', abater: false }), // pago por fora
+      gasto('2026-12', 'viagens', 2500, { data: '2026-12-05' }), // sem marca: regra antiga, abate
+      gasto('2026-12', 'alim', 3000, { data: '2026-12-08', abater: true }),
+      gasto('2026-12', 'alim', 800, { data: '2026-12-09', abater: false }),
+      gasto('2026-12', 'alim', 700, { data: null, abater: true }), // sem dia: fora das semanas, mas abate
+      gasto('2026-12', 'cartao', 99999, { data: '2026-12-01', abater: true }), // o resto da fatura nunca abate
+    ]
+    const r = resumoDoCartao(doMes, CARTAO_VAZIO, '2026-12')
+    expect(r.lancado).toEqual([0, 3000, 0, 0, 0])
+    expect(r.uber).toBe(4000 + 2500 + 700)
+    expect(r.abater).toBe(4000 + 2500 + 700 + 3000)
+    expect(r.abatidos.map((l) => l.valor)).toEqual([3000, 2500, 4000, 700])
+  })
+
   it('aplica o ajuste da fatura e fica sem valor quando a fatura não foi informada', () => {
     const comAjuste = resumoDoCartao(itens, { ...cartao, ajusteFatura: -51552 }, '2026-01')
     expect(comAjuste.atualizado).toBe(559600 - 51552 - comAjuste.abater)

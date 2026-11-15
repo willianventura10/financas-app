@@ -12,7 +12,9 @@ export interface Lancamento {
   categoria: CategoriaId
   /** "Comi na rua" é Alimentação com esta marca. */
   comiNaRua?: boolean
-  /** Alimentação paga sem o cartão: fica fora do que o mês abate da fatura. */
+  /** O gasto foi pago no cartão e sai da fatura do mês. Sem a marca, vale a regra antiga da categoria. */
+  abater?: boolean
+  /** Forma antiga da marca, só para Alimentação. */
   foraDoCartao?: boolean
   obs?: string
   origem?: 'planilha'

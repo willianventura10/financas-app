@@ -1,6 +1,6 @@
 import type { Cartao, Config, Lancamento, MesDoc, Viagem } from '../dados/tipos'
 import { CATEGORIAS, type CategoriaId } from './categorias'
-import { totaisPorCategoria, totalDoMes } from './totais'
+import { totalDoMes } from './totais'
 
 // As regras de cálculo da aba Mensal. Tudo em centavos.
 
@@ -56,8 +56,23 @@ export function resumoDoMes(itensDoMes: Lancamento[], mes: MesDoc, config: Confi
   }
 }
 
+/** Categorias que nascem marcadas para abater da fatura. */
+export function abatePorPadrao(categoria: CategoriaId): boolean {
+  return categoria === 'alim' || categoria === 'viagens' || categoria === 'transporte'
+}
+
+/** O lançamento sai da fatura do mês? Vale a marca; sem ela, a regra antiga de cada categoria. */
+export function abateDaFatura(l: Lancamento): boolean {
+  if (l.categoria === 'cartao') return false
+  if (l.abater !== undefined) return l.abater
+  if (l.categoria === 'alim') return !!l.data && !l.foraDoCartao
+  return l.categoria === 'viagens' || l.categoria === 'transporte'
+}
+
 export interface ResumoCartao {
-  /** Viagens + Transporte do mês, mais o ajuste manual. */
+  /** Os lançamentos que saem da fatura, do mais recente para o mais antigo. */
+  abatidos: Lancamento[]
+  /** Lançamentos abatidos que não estão na tabela das semanas, mais o ajuste manual. */
   uber: number
   /** O que já foi lançado em outras categorias e sai da fatura. */
   abater: number
@@ -78,25 +93,28 @@ export function semanasDoMes(mes: string): { de: number; ate: number }[] {
   }))
 }
 
-/** Alimentação com data e paga no cartão, somada por semana do calendário. */
+const naSemana = (l: Lancamento, mes: string) => l.categoria === 'alim' && !!l.data?.startsWith(mes)
+
+/** Alimentação com data e abatida da fatura, somada por semana do calendário. */
 export function alimentacaoPorSemana(itensDoMes: Lancamento[], mes: string): number[] {
   const semanas = semanasDoMes(mes)
   const total = [0, 0, 0, 0, 0]
   for (const l of itensDoMes) {
-    if (l.categoria !== 'alim' || l.foraDoCartao || !l.data?.startsWith(mes)) continue
-    const dia = Number(l.data.slice(8, 10))
+    if (!abateDaFatura(l) || !naSemana(l, mes)) continue
+    const dia = Number(l.data!.slice(8, 10))
     total[semanas.findIndex((s) => dia <= s.ate)] += l.valor
   }
   return total
 }
 
 export function resumoDoCartao(itensDoMes: Lancamento[], c: Cartao, mes: string): ResumoCartao {
-  const porCategoria = totaisPorCategoria(itensDoMes)
-  const de = (id: CategoriaId) => porCategoria.find((t) => t.id === id)!.total
-  const uber = de('viagens') + de('transporte') + c.ajusteUber
+  const abatidos = itensDoMes
+    .filter(abateDaFatura)
+    .sort((a, b) => (b.data ?? '').localeCompare(a.data ?? '') || b.criadoEm - a.criadoEm)
+  const uber = soma(abatidos.filter((l) => !naSemana(l, mes)).map((l) => l.valor)) + c.ajusteUber
   const lancado = alimentacaoPorSemana(itensDoMes, mes)
   const abater = uber + c.saudeAcademia + soma(lancado) + soma(c.semanas) + c.ajusteAbater
-  return { uber, lancado, abater, atualizado: c.fatura === null ? null : c.fatura + c.ajusteFatura - abater }
+  return { abatidos, uber, lancado, abater, atualizado: c.fatura === null ? null : c.fatura + c.ajusteFatura - abater }
 }
 
 export interface LinhaAno {

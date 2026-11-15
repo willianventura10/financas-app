@@ -59,6 +59,7 @@ export function Gastos(props: Props) {
             config={config}
             aoGravar={props.aoGravarMes}
             aoLancarCartao={props.aoLancarCartao}
+            aoAbrir={props.aoAbrir}
           />
         ) : (
           semConfig

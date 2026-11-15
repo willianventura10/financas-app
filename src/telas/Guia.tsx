@@ -37,6 +37,18 @@ const GUIA: Capitulo[] = [
           '- Sem conexão, envio pendente: há lançamentos esperando a internet. Não limpe os dados do navegador nem saia da conta antes de voltar a "Salvo".',
         ],
       },
+      {
+        titulo: 'Desfazer e refazer',
+        texto: [
+          'As duas setas no topo desfazem e refazem as últimas alterações, até 10. O app avisa o que foi desfeito ou refeito.',
+          'Vale para gastos, campos do mês e do cartão, viagens, metas, listas, posições, compras e vendas e fechamentos.',
+          '- A memória é só deste aparelho e se perde ao fechar o app.',
+          '- Fazer uma alteração nova depois de desfazer apaga o que podia ser refeito.',
+          '- Uma ação que grava vários registros de uma vez, como "Aplicar aos saldos", volta inteira num passo só.',
+          '- Importar um backup não pode ser desfeito e zera a memória. Baixe um backup antes de importar.',
+          '- Se o mesmo registro foi alterado em outro aparelho nesse meio-tempo, desfazer aqui sobrescreve a alteração de lá.',
+        ],
+      },
     ],
   },
   {
@@ -149,7 +161,9 @@ const GUIA: Capitulo[] = [
       {
         titulo: 'Posições',
         texto: [
-          'Cada posição é um investimento com caixa, instituição e valor atual. Atualize o valor direto na lista ou toque na posição para alterar os demais dados.',
+          'Cada posição é um investimento com caixa, instituição e valor atual. Atualize o valor direto na lista.',
+          'Use Editar para alterar os demais dados e Excluir para remover a posição. Depois de excluir aparece a opção Desfazer; as setas do topo também desfazem.',
+          'Excluir uma posição tira o valor do patrimônio, mas não apaga as compras e vendas nem os meses já fechados no Histórico.',
           'Posições com vencimento entram no alerta quando faltam menos dias que o definido em Mais › Metas.',
         ],
       },

@@ -225,9 +225,7 @@ function VisaoPosicoes({ posicoes, p, inv, aoGravar, aoExcluir }: Props & { p: P
             return (
               <li key={pos.id}>
                 <div className="posicao-topo">
-                  <button className="texto" onClick={() => setEditando(pos)}>
-                    {pos.nome}
-                  </button>
+                  <strong>{pos.nome}</strong>
                   <span className="apoio num">{p.total ? porcento(pos.valor / p.total) : ''}</span>
                 </div>
                 <p className="apoio">
@@ -240,6 +238,14 @@ function VisaoPosicoes({ posicoes, p, inv, aoGravar, aoExcluir }: Props & { p: P
                   aoMudar={(v) => aoGravar(`posicoes/${pos.id}`, { ...pos, valor: v ?? 0 })}
                 />
                 <Status texto={alerta} />
+                <div className="botoes">
+                  <button className="texto" onClick={() => setEditando(pos)}>
+                    Editar
+                  </button>
+                  <button className="texto" onClick={() => aoExcluir(`posicoes/${pos.id}`, pos, 'Posição excluída')}>
+                    Excluir
+                  </button>
+                </div>
               </li>
             )
           })}

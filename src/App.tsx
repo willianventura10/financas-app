@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { firebase } from './firebase'
 import { criarRepoFirestore } from './dados/repoFirestore'
@@ -6,6 +6,7 @@ import { criarRepoLocal } from './dados/repoLocal'
 import type { Config, EstadoSync, Historico, Lancamento, Lista, MesDoc, Operacao, Posicao, Viagem } from './dados/tipos'
 import { mesVazio, saldoDaCaixinha } from './lib/calculos'
 import { hoje, mesDe, nomeDoMes, somarMes } from './lib/datas'
+import { PILHA_VAZIA, descrever, desfazer, refazer, registrar, type Pilha } from './lib/pilha'
 import { Login } from './telas/Login'
 import { Inicio } from './telas/Inicio'
 import { Gastos } from './telas/Gastos'
@@ -96,25 +97,75 @@ function Principal({ usuario }: { usuario: User | null }) {
   const mesDoc = meses.find((m) => m.mes === mes) ?? mesVazio(mes)
 
   const falhou = () => setAviso({ texto: 'Não foi possível gravar. Tente de novo.' })
-  const gravar = (caminho: string, dados: object) => void repo.gravar(caminho, dados).catch(falhou)
+  const aplicar = (caminho: string, dados: object | null) =>
+    void (dados ? repo.gravar(caminho, dados) : repo.excluir(caminho)).catch(falhou)
+
+  // Como cada documento está agora, para guardar o "antes" de cada gravação.
+  const comId = <T extends { id: string }>(docs: T[]) => (id: string) => docs.find((d) => d.id === id)
+  const atual: Record<string, (id: string) => object | undefined> = {
+    lancamentos: comId(itensDoAno ?? []),
+    meses: (id) => meses.find((m) => m.mes === id),
+    config: () => config ?? undefined,
+    viagens: comId(viagens),
+    posicoes: comId(posicoes),
+    operacoes: comId(operacoes),
+    historico: (id) => historico.find((h) => h.mes === id),
+    listas: comId(listas),
+  }
+  const pilha = useRef(PILHA_VAZIA)
+  const mesmoLote = useRef(false)
+  const [podeDesfazer, setPodeDesfazer] = useState(false)
+  const [podeRefazer, setPodeRefazer] = useState(false)
+  function trocarPilha(nova: Pilha) {
+    pilha.current = nova
+    setPodeDesfazer(nova.feitas.length > 0)
+    setPodeRefazer(nova.desfeitas.length > 0)
+  }
+  // A pilha é deste aparelho e desta conta: trocou de conta, começa vazia.
+  useEffect(() => trocarPilha(PILHA_VAZIA), [repo])
+
+  /** Grava (ou exclui, com dados null) e guarda a alteração para o desfazer. */
+  function alterar(caminho: string, dados: object | null, antes?: object | null) {
+    const [colecao, id] = caminho.split('/')
+    const anterior = antes !== undefined ? antes : (atual[colecao]?.(id) ?? null)
+    trocarPilha(registrar(pilha.current, { caminho, antes: anterior, depois: dados }, mesmoLote.current))
+    // Gravações disparadas pelo mesmo clique formam uma alteração só.
+    if (!mesmoLote.current) {
+      mesmoLote.current = true
+      setTimeout(() => (mesmoLote.current = false), 0)
+    }
+    aplicar(caminho, dados)
+  }
+  const gravar = (caminho: string, dados: object) => alterar(caminho, dados)
+
+  function desfazerUltima() {
+    const { pilha: nova, acao } = desfazer(pilha.current)
+    if (!acao) return
+    trocarPilha(nova)
+    acao.forEach((p) => aplicar(p.caminho, p.antes))
+    setAviso({ texto: `Desfeito: ${descrever(acao)}` })
+  }
+
+  function refazerUltima() {
+    const { pilha: nova, acao } = refazer(pilha.current)
+    if (!acao) return
+    trocarPilha(nova)
+    acao.forEach((p) => aplicar(p.caminho, p.depois))
+    setAviso({ texto: `Refeito: ${descrever(acao)}` })
+  }
 
   function salvar(l: Lancamento, anterior?: Lancamento) {
-    gravar(`lancamentos/${l.id}`, l)
+    // O gasto pode cair em outro ano, que não está carregado: o "antes" vem de quem chamou.
+    alterar(`lancamentos/${l.id}`, l, anterior ?? (l.mes.startsWith(ano) ? undefined : null))
     setEditor(null)
     const onde = l.mes === mes ? '' : ` em ${nomeDoMes(l.mes)}`
-    setAviso({
-      texto: (anterior ? 'Gasto alterado' : 'Gasto salvo') + onde,
-      desfazer: () =>
-        anterior
-          ? gravar(`lancamentos/${l.id}`, anterior)
-          : void repo.excluir(`lancamentos/${l.id}`).catch(falhou),
-    })
+    setAviso({ texto: (anterior ? 'Gasto alterado' : 'Gasto salvo') + onde, desfazer: desfazerUltima })
   }
 
   function excluir(caminho: string, dados: object, texto: string) {
-    repo.excluir(caminho).catch(falhou)
+    alterar(caminho, null, dados)
     setEditor(null)
-    setAviso({ texto, desfazer: () => gravar(caminho, dados) })
+    setAviso({ texto, desfazer: desfazerUltima })
   }
 
   /** O "Cartão atualizado" de um mês vira um lançamento de Cartão no mês seguinte. */
@@ -182,9 +233,21 @@ function Principal({ usuario }: { usuario: User | null }) {
               ›
             </button>
           </div>
-          <span className={`sync sync-${sync.tom}`} role="status">
-            {sync.texto}
-          </span>
+          <div className="acoes-topo">
+            <button aria-label="Desfazer" title="Desfazer" disabled={!podeDesfazer} onClick={desfazerUltima}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
+              </svg>
+            </button>
+            <button aria-label="Refazer" title="Refazer" disabled={!podeRefazer} onClick={refazerUltima}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3" />
+              </svg>
+            </button>
+            <span className={`sync sync-${sync.tom}`} role="status">
+              {sync.texto}
+            </span>
+          </div>
         </header>
 
         {!firebase && <p className="faixa">Modo local: os dados ficam só neste aparelho.</p>}
@@ -225,7 +288,7 @@ function Principal({ usuario }: { usuario: User | null }) {
               caixinhaViagem={caixinha}
               aoGravar={gravar}
               aoExcluir={excluir}
-              aoImportar={(docs) => repo.importar(docs)}
+              aoImportar={(docs) => repo.importar(docs).then(() => trocarPilha(PILHA_VAZIA))}
               config={config}
               listas={listas}
               aoLerTudo={() => repo.lerTudo()}

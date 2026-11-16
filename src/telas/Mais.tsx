@@ -14,6 +14,8 @@ import { useInstalar } from '../instalar'
 
 interface Props {
   email: string | null
+  /** Conta que só consulta os dados de outra: sem importação e sem edição. */
+  consulta: boolean
   viagens: Viagem[]
   posicoes: Posicao[]
   /** Ano do mês selecionado no topo: a lista de viagens mostra só ele. */
@@ -62,11 +64,11 @@ export function Mais(props: Props) {
       {secao === 'listas' && <Listas listas={props.listas} aoGravar={props.aoGravar} />}
       {secao === 'dados' && (
         <>
-          <Importar aoImportar={props.aoImportar} />
+          {!props.consulta && <Importar aoImportar={props.aoImportar} />}
           <Exportar aoLerTudo={props.aoLerTudo} />
         </>
       )}
-      {secao === 'conta' && <Conta email={props.email} />}
+      {secao === 'conta' && <Conta email={props.email} consulta={props.consulta} />}
       {secao === 'guia' && <Guia />}
     </div>
   )
@@ -90,10 +92,10 @@ function Exportar({ aoLerTudo }: Pick<Props, 'aoLerTudo'>) {
       <h2>Exportar</h2>
       <p>O Excel traz lançamentos, meses, posições, compras e vendas e histórico. O backup guarda tudo e pode ser importado de volta.</p>
       <div className="botoes">
-        <button className="secundario" onClick={() => void exportar(exportarExcel)}>
+        <button className="secundario sempre" onClick={() => void exportar(exportarExcel)}>
           Exportar para Excel
         </button>
-        <button className="secundario" onClick={() => void exportar(exportarBackup)}>
+        <button className="secundario sempre" onClick={() => void exportar(exportarBackup)}>
           Baixar backup
         </button>
       </div>
@@ -102,7 +104,7 @@ function Exportar({ aoLerTudo }: Pick<Props, 'aoLerTudo'>) {
   )
 }
 
-function Conta({ email }: Pick<Props, 'email'>) {
+function Conta({ email, consulta }: Pick<Props, 'email' | 'consulta'>) {
   const instalar = useInstalar()
   const instalado =
     window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true
@@ -110,11 +112,12 @@ function Conta({ email }: Pick<Props, 'email'>) {
       <section className="bloco sem-linha">
         <h2>Conta</h2>
         <p>{email ?? 'Modo local, sem login.'}</p>
+        {consulta && <p>Esta conta está no modo consulta: vê os dados, mas não lança nem altera nada.</p>}
         <h3>Instalar no aparelho</h3>
         {instalado ? (
           <p>O app já está instalado e você está nele agora.</p>
         ) : instalar ? (
-          <button className="primario" onClick={instalar}>
+          <button className="primario sempre" onClick={instalar}>
             Instalar o app
           </button>
         ) : (
@@ -138,7 +141,7 @@ function Conta({ email }: Pick<Props, 'email'>) {
         {firebase && (
           <>
             <p>Sair apaga a cópia dos dados guardada neste aparelho. Nada é apagado da sua conta.</p>
-            <button className="perigo" onClick={() => void sairELimpar()}>
+            <button className="perigo sempre" onClick={() => void sairELimpar()}>
               Sair e limpar os dados deste aparelho
             </button>
           </>

@@ -38,6 +38,15 @@ const GUIA: Capitulo[] = [
         ],
       },
       {
+        titulo: 'Conta de consulta',
+        texto: [
+          'Uma segunda pessoa pode ter login próprio para ver os seus dados sem alterar nada. A trava fica nas regras do banco, não só nas telas.',
+          'No modo consulta o app mostra o aviso "Consulta" no topo, não tem o botão Lançar nem desfazer e refazer, e esconde os botões e formulários de edição. Exportar para Excel e baixar backup continuam disponíveis.',
+          'A conta de consulta é criada pelo dono no painel do Firebase: um usuário em Authentication e um documento na coleção "leitores", com o identificador dele no campo "dono".',
+          'Para tirar o acesso, apague esse documento ou o usuário no painel.',
+        ],
+      },
+      {
         titulo: 'Ocultar os valores',
         texto: [
           'O olho no topo esconde todos os valores em reais, que viram bolinhas. Toque de novo para mostrar.',

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { firebase } from './firebase'
+import { useAcesso, type Acesso } from './acesso'
 import { criarRepoFirestore } from './dados/repoFirestore'
 import { criarRepoLocal } from './dados/repoLocal'
 import type { Config, EstadoSync, Historico, Lancamento, Lista, MesDoc, Operacao, Posicao, Viagem } from './dados/tipos'
@@ -38,7 +39,14 @@ export function App() {
 
   if (firebase && usuario === undefined) return <p className="abrindo">Abrindo…</p>
   if (firebase && !usuario) return <Login />
-  return <Principal usuario={usuario ?? null} />
+  return <ComAcesso usuario={usuario ?? null} />
+}
+
+/** Descobre de quem são os dados que esta conta abre antes de montar o app. */
+function ComAcesso({ usuario }: { usuario: User | null }) {
+  const acesso = useAcesso(usuario?.uid)
+  if (!acesso) return <p className="abrindo">Abrindo…</p>
+  return <Principal usuario={usuario} acesso={acesso} />
 }
 
 function useConectado() {
@@ -55,9 +63,9 @@ function useConectado() {
   return conectado
 }
 
-function Principal({ usuario }: { usuario: User | null }) {
-  const uid = usuario?.uid
-  const repo = useMemo(() => (firebase && uid ? criarRepoFirestore(firebase.db, uid) : criarRepoLocal()), [uid])
+function Principal({ usuario, acesso }: { usuario: User | null; acesso: Acesso }) {
+  const { dono, consulta } = acesso
+  const repo = useMemo(() => (firebase && dono ? criarRepoFirestore(firebase.db, dono) : criarRepoLocal()), [dono])
 
   const [aba, setAba] = useState<Aba>('inicio')
   const [mes, setMes] = useState(() => mesDe(hoje()))
@@ -147,6 +155,7 @@ function Principal({ usuario }: { usuario: User | null }) {
 
   /** Grava (ou exclui, com dados null) e guarda a alteração para o desfazer. */
   function alterar(caminho: string, dados: object | null, antes?: object | null) {
+    if (consulta) return setAviso({ texto: 'Modo consulta: nada é alterado.' })
     const [colecao, id] = caminho.split('/')
     const anterior = antes !== undefined ? antes : (atual[colecao]?.(id) ?? null)
     trocarPilha(registrar(pilha.current, { caminho, antes: anterior, depois: dados }, mesmoLote.current))
@@ -230,16 +239,18 @@ function Principal({ usuario }: { usuario: User | null }) {
   )
 
   return (
-    <div className={oculto ? 'app oculto' : 'app'}>
+    <div className={['app', oculto && 'oculto', consulta && 'consulta'].filter(Boolean).join(' ')}>
       <nav className="navegacao" aria-label="Áreas do app">
         <p className="marca">Finanças</p>
         {abas.slice(0, 2).map(botaoAba)}
-        <button className="lancar" onClick={() => setEditor('novo')}>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Lançar
-        </button>
+        {!consulta && (
+          <button className="lancar" onClick={() => setEditor('novo')}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Lançar
+          </button>
+        )}
         {abas.slice(2).map(botaoAba)}
       </nav>
 
@@ -267,16 +278,21 @@ function Principal({ usuario }: { usuario: User | null }) {
                 {oculto && <path d="M4 4l16 16" />}
               </svg>
             </button>
-            <button aria-label="Desfazer" title="Desfazer" disabled={!podeDesfazer} onClick={desfazerUltima}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
-              </svg>
-            </button>
-            <button aria-label="Refazer" title="Refazer" disabled={!podeRefazer} onClick={refazerUltima}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3" />
-              </svg>
-            </button>
+            {!consulta && (
+              <>
+                <button aria-label="Desfazer" title="Desfazer" disabled={!podeDesfazer} onClick={desfazerUltima}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
+                  </svg>
+                </button>
+                <button aria-label="Refazer" title="Refazer" disabled={!podeRefazer} onClick={refazerUltima}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3" />
+                  </svg>
+                </button>
+              </>
+            )}
+            {consulta && <span className="sync sync-neutro">Consulta</span>}
             <span className={`sync sync-${sync.tom}`} role="status">
               {sync.texto}
             </span>
@@ -286,7 +302,7 @@ function Principal({ usuario }: { usuario: User | null }) {
         {!firebase && <p className="faixa">Modo local: os dados ficam só neste aparelho.</p>}
 
         <main>
-          {aba === 'inicio' && <Inicio itens={itens} mes={mes} mesDoc={mesDoc} config={config} historico={historico} />}
+          {aba === 'inicio' && <Inicio itens={itens} mes={mes} mesDoc={mesDoc} config={config} historico={historico} consulta={consulta} />}
           {aba === 'gastos' && (
             <Gastos
               itens={itens}
@@ -296,7 +312,7 @@ function Principal({ usuario }: { usuario: User | null }) {
               meses={meses}
               caixinha={caixinha}
               config={config}
-              aoAbrir={setEditor}
+              aoAbrir={consulta ? () => {} : setEditor}
               aoGravarMes={(m) => gravar(`meses/${m.mes}`, m)}
               aoLancarCartao={lancarCartao}
             />
@@ -315,6 +331,7 @@ function Principal({ usuario }: { usuario: User | null }) {
           {aba === 'mais' && (
             <Mais
               email={usuario?.email ?? null}
+              consulta={consulta}
               viagens={viagens}
               posicoes={posicoes}
               ano={ano}

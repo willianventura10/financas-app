@@ -155,6 +155,20 @@ main {
   stroke-linejoin: round;
 }
 
+/* Modo consulta: some o que serve para alterar, e os campos ficam só para leitura. As regras do banco é que travam de fato. */
+.consulta main form,
+.consulta main :is(.primario, .secundario, .perigo, .texto):not(.sempre) {
+  display: none;
+}
+
+.consulta main label:not(:has([type='search'])) {
+  pointer-events: none;
+}
+
+.consulta .navegacao {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 /* Valores ocultos: os campos de valor viram bolinhas, menos o que está sendo digitado. */
 .oculto input.num:not(:focus) {
   -webkit-text-security: disc;

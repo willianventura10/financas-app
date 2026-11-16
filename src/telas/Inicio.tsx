@@ -13,15 +13,17 @@ interface Props {
   mesDoc: MesDoc
   config: Config | null
   historico: Historico[]
+  /** Quem só consulta não recebe os lembretes de backup e de fechamento. */
+  consulta: boolean
 }
 
-export function Inicio({ itens, mes, mesDoc, config, historico }: Props) {
+export function Inicio({ itens, mes, mesDoc, config, historico, consulta }: Props) {
   if (!itens) return <p className="abrindo">Carregando os gastos…</p>
   if (itens.length === 0)
     return (
       <section className="vazio">
         <h2>Nenhum gasto em {nomeDoMes(mes)}</h2>
-        <p>Use o botão Lançar para registrar o primeiro.</p>
+        {!consulta && <p>Use o botão Lançar para registrar o primeiro.</p>}
       </section>
     )
 
@@ -31,7 +33,7 @@ export function Inicio({ itens, mes, mesDoc, config, historico }: Props) {
   const pendentes = config ? contasPendentes(mesDoc, config) : []
   const estouradas = config ? categorias.filter((c) => c.total > (config.metas[c.id] ?? Infinity)) : []
   // Os lembretes são de hoje, então só aparecem no mês corrente.
-  const avisos = mes === mesDe(hoje()) ? lembretes(hoje(), historico, lerUltimoBackup()) : []
+  const avisos = !consulta && mes === mesDe(hoje()) ? lembretes(hoje(), historico, lerUltimoBackup()) : []
 
   return (
     <>

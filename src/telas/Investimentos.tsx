@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { CampoValor, Composicao, Resultado, Status } from '../componentes'
 import type { Config, Historico, Operacao, ParametrosInvest, Posicao } from '../dados/tipos'
 import { dataBr, hoje, nomeDoMes } from '../lib/datas'
-import { lerCentavos, numero, porcento, reais } from '../lib/dinheiro'
+import { lerCentavos, numero, porcento, precoMedio, reais } from '../lib/dinheiro'
 import {
   alertaDeVencimento,
   diasAte,
@@ -10,10 +10,12 @@ import {
   linhasDoHistorico,
   objetivosNoHistorico,
   painel as calcularPainel,
+  resultadoDoAtivo,
   resumoPorAtivo,
   sugestaoDeAporte,
   valorNoHistorico,
   type Painel,
+  type ResumoAtivo,
 } from '../lib/investimentos'
 import { EditorPosicao } from './EditorPosicao'
 
@@ -286,8 +288,20 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
   const resumo = resumoPorAtivo(operacoes, agora)
   const cotacoes = config?.cotacoes ?? {}
   const ordenadas = [...operacoes].sort((a, b) => b.data.localeCompare(a.data))
-  const medio = (centavos: number) =>
-    'R$ ' + (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+  function resultado(r: ResumoAtivo) {
+    const x = resultadoDoAtivo(r, cotacoes[r.ativo]?.preco)
+    if (!x) return null
+    const sinal = x.pct > 0 ? '+' : x.pct < 0 ? '−' : ''
+    return (
+      <p className="apoio">
+        <span className={`status status-${x.diferenca > 0 ? 'ok' : x.diferenca < 0 ? 'critico' : 'neutro'}`}>
+          {x.diferenca > 0 ? 'Lucro' : x.diferenca < 0 ? 'Prejuízo' : 'No zero a zero'}
+        </span>{' '}
+        {x.diferenca !== 0 && `de ${reais(Math.abs(x.diferenca))} `}({sinal}
+        {porcento(Math.abs(x.pct))}) sobre o preço médio
+      </p>
+    )
+  }
 
   function adicionar(e: FormEvent) {
     e.preventDefault()
@@ -355,7 +369,7 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
                 </span>
               </div>
               <p className="apoio">
-                Preço médio {r.precoMedio === null ? 'sem compras' : medio(r.precoMedio)}, custo das compras{' '}
+                Preço médio {r.precoMedio === null ? 'sem compras' : precoMedio(r.precoMedio)}, custo das compras{' '}
                 {reais(r.custoDasCompras)}
                 {cotacoes[r.ativo] && r.cotas > 0 && (
                   <>
@@ -364,6 +378,7 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
                   </>
                 )}
               </p>
+              {resultado(r)}
               {r.vendaLiberadaEm && (
                 <p className="apoio">
                   Venda liberada em {dataBr(r.vendaLiberadaEm)} <Status texto={r.status} />
@@ -430,7 +445,7 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
                 <span className="num">{reais(o.total)}</span>
               </div>
               <p className="apoio">
-                {dataBr(o.data)}, a {medio(o.total / o.quantidade)} por cota. {o.obs}
+                {dataBr(o.data)}, a {precoMedio(o.total / o.quantidade)} por cota. {o.obs}
               </p>
               <button className="texto" onClick={() => aoExcluir(`operacoes/${o.id}`, o, 'Operação excluída')}>
                 Excluir

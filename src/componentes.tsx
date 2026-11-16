@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { lerCentavos, numero, porcento, reais } from './lib/dinheiro'
+import { lerCentavos, paraCampo, porcento, reais } from './lib/dinheiro'
 import { tomDoStatus } from './lib/investimentos'
 
 interface CampoValorProps {
@@ -15,7 +15,7 @@ interface CampoValorProps {
 
 /** Campo de dinheiro que grava ao sair, para fazer uma gravação por alteração. */
 export function CampoValor({ rotulo, valor, aoMudar, negativo, ajuda, nome }: CampoValorProps) {
-  const salvo = valor === null ? '' : numero(valor)
+  const salvo = valor === null ? '' : paraCampo(valor)
   const [digitado, setDigitado] = useState<string | null>(null)
   const [invalido, setInvalido] = useState(false)
 

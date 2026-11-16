@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Lancamento } from '../dados/tipos'
 import { hoje, mesDe, nomeDoMes, somarMes } from './datas'
-import { lerCentavos, reais } from './dinheiro'
+import { lerCentavos, numero, ocultarValores, paraCampo, precoMedio, reais } from './dinheiro'
 import { totaisPorCategoria, totalDoMes } from './totais'
 
 const gasto = (parcial: Partial<Lancamento>): Lancamento => ({
@@ -77,5 +77,18 @@ describe('totais', () => {
   })
   it('soma o total do mês', () => {
     expect(totalDoMes(itens)).toBe(123176)
+  })
+})
+
+describe('ocultar valores', () => {
+  it('troca os valores mostrados por bolinhas, menos o que vai para os campos', () => {
+    ocultarValores(true)
+    expect(reais(4590)).toBe('R$ ••••')
+    expect(numero(4590)).toBe('••••')
+    expect(precoMedio(12533.33)).toBe('R$ ••••')
+    expect(paraCampo(123456)).toBe('1.234,56')
+    ocultarValores(false)
+    expect(numero(123456)).toBe('1.234,56')
+    expect(precoMedio(12533.3333)).toBe('R$ 125,3333')
   })
 })

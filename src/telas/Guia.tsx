@@ -38,6 +38,15 @@ const GUIA: Capitulo[] = [
         ],
       },
       {
+        titulo: 'Ocultar os valores',
+        texto: [
+          'O olho no topo esconde todos os valores em reais, que viram bolinhas. Toque de novo para mostrar.',
+          '- A escolha fica guardada neste aparelho, inclusive depois de fechar o app.',
+          '- Um campo de valor mostra o número enquanto você digita nele.',
+          '- Percentuais, quantidades de cotas, gráficos e anotações escritas por você continuam visíveis.',
+        ],
+      },
+      {
         titulo: 'Desfazer e refazer',
         texto: [
           'As duas setas no topo desfazem e refazem as últimas alterações, até 10. O app avisa o que foi desfeito ou refeito.',
@@ -171,6 +180,7 @@ const GUIA: Capitulo[] = [
         titulo: 'Compras, vendas e cotações',
         texto: [
           'Registre cada compra ou venda em Investimentos › Compras. O resumo por ativo calcula a quantidade, o preço médio e a data em que a venda fica liberada pela regra dos 30 dias.',
+          'Com cotação, o resumo mostra o lucro ou prejuízo das cotas em carteira: a diferença em reais e o percentual da cotação sobre o preço médio.',
           '"Atualizar cotações" busca os preços na brapi e precisa do token cadastrado em Mais › Metas. Se a busca falhar, o preço digitado continua valendo.',
           '"Aplicar aos saldos" leva a cotação para o valor das posições com o mesmo nome do ativo.',
         ],
@@ -180,6 +190,7 @@ const GUIA: Capitulo[] = [
         texto: [
           'Em Investimentos › Histórico, informe o aporte e as saídas do mês e toque em "Fechar o mês". O app guarda uma foto das caixas naquele momento.',
           'Se algo mudou, use "Refazer o fechamento". A evolução por caixa mostra os meses fechados.',
+          'Se o mês anterior ficar sem fechamento, o Início avisa em "Pede atenção".',
         ],
       },
     ],
@@ -216,12 +227,14 @@ const GUIA: Capitulo[] = [
           '- Baixar backup: gera um arquivo com tudo, que pode ser importado de volta.',
           '- Exportar para Excel: gera uma planilha com lançamentos, meses, posições, compras e vendas e histórico.',
           'Não há backup automático. Baixe um backup pelo menos uma vez por mês e guarde fora do celular.',
+          'O Início avisa, em "Pede atenção", quando este aparelho está há mais de 30 dias sem baixar backup. O registro é por aparelho: baixar no computador não tira o aviso do celular.',
         ],
       },
       {
         titulo: 'Conta e instalação',
         texto: [
-          'Em Mais › Conta você vê o e-mail da conta, a versão do app e, quando o navegador permite, o botão para instalar o app.',
+          'Em Mais › Conta você vê o e-mail da conta, a versão do app e a parte "Instalar no aparelho".',
+          'Quando o navegador permite, aparece o botão "Instalar o app". Quando não, aparecem os passos para instalar pelo menu do navegador, no iPhone, no Android e no computador.',
           '"Sair e limpar os dados deste aparelho" apaga só a cópia local. Nada é apagado da sua conta, mas confira antes se o aviso do topo está em "Salvo".',
           'Quando sair uma versão nova, feche e abra o app para atualizar.',
         ],

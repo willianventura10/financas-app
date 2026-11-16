@@ -6,6 +6,7 @@ import { criarRepoLocal } from './dados/repoLocal'
 import type { Config, EstadoSync, Historico, Lancamento, Lista, MesDoc, Operacao, Posicao, Viagem } from './dados/tipos'
 import { mesVazio, saldoDaCaixinha } from './lib/calculos'
 import { hoje, mesDe, nomeDoMes, somarMes } from './lib/datas'
+import { ocultarValores } from './lib/dinheiro'
 import { PILHA_VAZIA, descrever, desfazer, refazer, registrar, type Pilha } from './lib/pilha'
 import { Login } from './telas/Login'
 import { Inicio } from './telas/Inicio'
@@ -15,6 +16,15 @@ import { Lancar } from './telas/Lancar'
 import { Mais } from './telas/Mais'
 
 type Aba = 'inicio' | 'gastos' | 'invest' | 'mais'
+
+const CHAVE_OCULTO = 'financas-ocultar'
+function lerOculto(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_OCULTO) === '1'
+  } catch {
+    return false
+  }
+}
 
 interface Aviso {
   texto: string
@@ -63,6 +73,17 @@ function Principal({ usuario }: { usuario: User | null }) {
   const [editor, setEditor] = useState<'novo' | Lancamento | null>(null)
   const [aviso, setAviso] = useState<Aviso | null>(null)
   const conectado = useConectado()
+  const [oculto, setOculto] = useState(lerOculto)
+  // Antes de desenhar as telas: é o que faz reais() e numero() devolverem bolinhas.
+  ocultarValores(oculto)
+  function trocarOculto() {
+    try {
+      localStorage.setItem(CHAVE_OCULTO, oculto ? '' : '1')
+    } catch {
+      // Sem armazenamento, a escolha vale só até fechar o app.
+    }
+    setOculto(!oculto)
+  }
   const ano = mes.slice(0, 4)
   const caixinha = saldoDaCaixinha(meses, viagens)
 
@@ -209,7 +230,7 @@ function Principal({ usuario }: { usuario: User | null }) {
   )
 
   return (
-    <div className="app">
+    <div className={oculto ? 'app oculto' : 'app'}>
       <nav className="navegacao" aria-label="Áreas do app">
         <p className="marca">Finanças</p>
         {abas.slice(0, 2).map(botaoAba)}
@@ -234,6 +255,18 @@ function Principal({ usuario }: { usuario: User | null }) {
             </button>
           </div>
           <div className="acoes-topo">
+            <button
+              aria-label={oculto ? 'Mostrar os valores' : 'Ocultar os valores'}
+              title={oculto ? 'Mostrar os valores' : 'Ocultar os valores'}
+              aria-pressed={oculto}
+              onClick={trocarOculto}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                <circle cx="12" cy="12" r="3" />
+                {oculto && <path d="M4 4l16 16" />}
+              </svg>
+            </button>
             <button aria-label="Desfazer" title="Desfazer" disabled={!podeDesfazer} onClick={desfazerUltima}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />
@@ -253,7 +286,7 @@ function Principal({ usuario }: { usuario: User | null }) {
         {!firebase && <p className="faixa">Modo local: os dados ficam só neste aparelho.</p>}
 
         <main>
-          {aba === 'inicio' && <Inicio itens={itens} mes={mes} mesDoc={mesDoc} config={config} />}
+          {aba === 'inicio' && <Inicio itens={itens} mes={mes} mesDoc={mesDoc} config={config} historico={historico} />}
           {aba === 'gastos' && (
             <Gastos
               itens={itens}

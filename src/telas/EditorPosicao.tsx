@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { ParametrosInvest, Posicao } from '../dados/tipos'
-import { lerCentavos, numero } from '../lib/dinheiro'
+import { lerCentavos, paraCampo } from '../lib/dinheiro'
 import { caixasDe } from '../lib/investimentos'
 
 interface Props {
@@ -31,7 +31,7 @@ export function EditorPosicao({ inicial, ordem, inv, aoSalvar, aoExcluir, aoFech
       obs: '',
     },
   )
-  const [valor, setValor] = useState(numero(p.valor))
+  const [valor, setValor] = useState(paraCampo(p.valor))
   const [erro, setErro] = useState('')
   const mudar = (parte: Partial<Posicao>) => setP({ ...p, ...parte })
 

@@ -1,8 +1,9 @@
 import { Medidor, Resultado } from '../componentes'
-import type { Config, Lancamento, MesDoc } from '../dados/tipos'
+import type { Config, Historico, Lancamento, MesDoc } from '../dados/tipos'
 import { contasPendentes, resumoDoMes } from '../lib/calculos'
 import { nomeDaCategoria } from '../lib/categorias'
-import { nomeDoMes } from '../lib/datas'
+import { hoje, mesDe, nomeDoMes } from '../lib/datas'
+import { lembretes, lerUltimoBackup } from '../lib/lembretes'
 import { reais } from '../lib/dinheiro'
 import { totaisPorCategoria } from '../lib/totais'
 
@@ -11,9 +12,10 @@ interface Props {
   mes: string
   mesDoc: MesDoc
   config: Config | null
+  historico: Historico[]
 }
 
-export function Inicio({ itens, mes, mesDoc, config }: Props) {
+export function Inicio({ itens, mes, mesDoc, config, historico }: Props) {
   if (!itens) return <p className="abrindo">Carregando os gastos…</p>
   if (itens.length === 0)
     return (
@@ -28,6 +30,8 @@ export function Inicio({ itens, mes, mesDoc, config }: Props) {
   const total = resumo?.total ?? itens.reduce((s, l) => s + l.valor, 0)
   const pendentes = config ? contasPendentes(mesDoc, config) : []
   const estouradas = config ? categorias.filter((c) => c.total > (config.metas[c.id] ?? Infinity)) : []
+  // Os lembretes são de hoje, então só aparecem no mês corrente.
+  const avisos = mes === mesDe(hoje()) ? lembretes(hoje(), historico, lerUltimoBackup()) : []
 
   return (
     <>
@@ -48,7 +52,7 @@ export function Inicio({ itens, mes, mesDoc, config }: Props) {
         </section>
       )}
 
-      {(estouradas.length > 0 || pendentes.length > 0) && (
+      {(estouradas.length > 0 || pendentes.length > 0 || avisos.length > 0) && (
         <section className="atencao">
           <h2>Pede atenção</h2>
           <ul>
@@ -56,6 +60,9 @@ export function Inicio({ itens, mes, mesDoc, config }: Props) {
               <li key={c.id}>{nomeDaCategoria(c.id)} passou da meta.</li>
             ))}
             {pendentes.length > 0 && <li>Contas sem OK: {pendentes.join(', ')}.</li>}
+            {avisos.map((a) => (
+              <li key={a}>{a}</li>
+            ))}
           </ul>
         </section>
       )}

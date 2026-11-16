@@ -21,13 +21,33 @@ export function lerCentavos(texto: string, negativo = false): number | null {
 const formato = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 const semSimbolo = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-/** 4590 -> "R$ 45,90" */
-export function reais(centavos: number): string {
-  return formato.format(centavos / 100)
+// Com os valores ocultos, tudo o que é mostrado em reais vira bolinhas, como nos apps de banco.
+let oculto = false
+const MASCARA = '••••'
+
+/** Liga ou desliga a ocultação dos valores mostrados na tela. */
+export function ocultarValores(sim: boolean): void {
+  oculto = sim
 }
 
-/** 123456 -> "1.234,56", para campos de digitação e tabelas. */
+/** 4590 -> "R$ 45,90" */
+export function reais(centavos: number): string {
+  return oculto ? `R$ ${MASCARA}` : formato.format(centavos / 100)
+}
+
+/** 123456 -> "1.234,56", para mostrar em tabelas. */
 export function numero(centavos: number): string {
+  return oculto ? MASCARA : semSimbolo.format(centavos / 100)
+}
+
+/** Preço médio em centavos com fração: 12533,33 -> "R$ 125,3333". */
+export function precoMedio(centavos: number): string {
+  const valor = (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+  return `R$ ${oculto ? MASCARA : valor}`
+}
+
+/** 123456 -> "1.234,56", para preencher campos de digitação: nunca vem oculto. */
+export function paraCampo(centavos: number): string {
   return semSimbolo.format(centavos / 100)
 }
 

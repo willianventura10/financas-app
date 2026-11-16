@@ -283,6 +283,24 @@ export function resumoPorAtivo(operacoes: Operacao[], hoje: string): ResumoAtivo
   })
 }
 
+export interface ResultadoAtivo {
+  /** Quanto as cotas em carteira custaram, pelo preço médio. */
+  custo: number
+  valor: number
+  /** Valor − custo: positivo é lucro, negativo é prejuízo. */
+  diferenca: number
+  /** Cotação ÷ preço médio − 1. */
+  pct: number
+}
+
+/** Lucro ou prejuízo das cotas em carteira, comparando a cotação com o preço médio das compras. */
+export function resultadoDoAtivo(r: ResumoAtivo, preco: number | null | undefined): ResultadoAtivo | null {
+  if (!preco || !r.precoMedio || r.cotas <= 0) return null
+  const custo = Math.round(r.cotas * r.precoMedio)
+  const valor = Math.round(r.cotas * preco)
+  return { custo, valor, diferenca: valor - custo, pct: preco / r.precoMedio - 1 }
+}
+
 /** Os nomes antigos das três caixas que o histórico guardava em campos próprios. */
 const ANTIGAS: Record<string, 'reserva' | 'carro' | 'ape'> = { Reserva: 'reserva', Carro: 'carro', Apê: 'ape' }
 

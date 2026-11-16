@@ -6,6 +6,7 @@ import {
   fotoDoMes,
   linhasDoHistorico,
   painel,
+  resultadoDoAtivo,
   resumoPorAtivo,
   sugestaoDeAporte,
   tomDoStatus,
@@ -262,5 +263,23 @@ describe('alertas', () => {
     expect(tomDoStatus('Abaixo da meta')).toBe('aviso')
     expect(tomDoStatus('OK')).toBe('ok')
     expect(tomDoStatus('Sem FGC')).toBe('neutro')
+  })
+})
+
+describe('lucro ou prejuízo por ativo', () => {
+  const ativo = { ativo: 'WRLD11', cotas: 10, custoDasCompras: 150000, precoMedio: 12500, vendaLiberadaEm: null, status: '' }
+
+  it('compara a cotação com o preço médio das cotas em carteira', () => {
+    // 12 cotas compradas por 1.500,00 (média de 125,00); restam 10.
+    expect(resultadoDoAtivo(ativo, 15000)).toEqual({ custo: 125000, valor: 150000, diferenca: 25000, pct: 15000 / 12500 - 1 })
+    const queda = resultadoDoAtivo(ativo, 10000)!
+    expect(queda.diferenca).toBe(-25000)
+    expect(queda.pct).toBeCloseTo(-0.2)
+  })
+
+  it('fica sem resultado sem cotação, sem compras ou sem cotas', () => {
+    expect(resultadoDoAtivo(ativo, null)).toBeNull()
+    expect(resultadoDoAtivo({ ...ativo, precoMedio: null }, 15000)).toBeNull()
+    expect(resultadoDoAtivo({ ...ativo, cotas: 0 }, 15000)).toBeNull()
   })
 })

@@ -2,12 +2,13 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Resultado } from '../componentes'
 import type { Config, DocParaImportar, Lista, Posicao, Viagem } from '../dados/tipos'
 import { exportarBackup, exportarExcel } from '../lib/exportar'
+import { marcarBackup } from '../lib/lembretes'
 import { Guia } from './Guia'
 import { Listas } from './Listas'
 import { Metas } from './Metas'
 import { hoje, mesCurto, mesDe } from '../lib/datas'
 import { abatidoDaViagem } from '../lib/calculos'
-import { lerCentavos, numero, reais } from '../lib/dinheiro'
+import { lerCentavos, paraCampo, reais } from '../lib/dinheiro'
 import { firebase, sairELimpar } from '../firebase'
 import { useInstalar } from '../instalar'
 
@@ -78,6 +79,7 @@ function Exportar({ aoLerTudo }: Pick<Props, 'aoLerTudo'>) {
     try {
       const docs = await aoLerTudo()
       await como(docs)
+      if (como === exportarBackup) marcarBackup(hoje())
       setEstado(`Arquivo gerado com ${docs.length} registros.`)
     } catch {
       setEstado('Não foi possível gerar o arquivo. Confira a conexão e tente de novo.')
@@ -102,14 +104,36 @@ function Exportar({ aoLerTudo }: Pick<Props, 'aoLerTudo'>) {
 
 function Conta({ email }: Pick<Props, 'email'>) {
   const instalar = useInstalar()
+  const instalado =
+    window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true
   return (
       <section className="bloco sem-linha">
         <h2>Conta</h2>
         <p>{email ?? 'Modo local, sem login.'}</p>
-        {instalar && (
+        <h3>Instalar no aparelho</h3>
+        {instalado ? (
+          <p>O app já está instalado e você está nele agora.</p>
+        ) : instalar ? (
           <button className="primario" onClick={instalar}>
             Instalar o app
           </button>
+        ) : (
+          <>
+            <p>O navegador não ofereceu a instalação automática. Dá para instalar pelo menu dele:</p>
+            <ul className="passos">
+              <li>
+                <strong>iPhone ou iPad, no Safari:</strong> toque em Compartilhar e depois em "Adicionar à Tela de Início".
+              </li>
+              <li>
+                <strong>Android, no Chrome:</strong> toque nos três pontinhos e depois em "Adicionar à tela inicial" ou
+                "Instalar app".
+              </li>
+              <li>
+                <strong>Computador, no Chrome ou Edge:</strong> use o ícone de instalar no fim da barra de endereço.
+              </li>
+            </ul>
+            <p className="apoio">Se o app já estiver instalado neste aparelho, o navegador não oferece de novo.</p>
+          </>
         )}
         {firebase && (
           <>
@@ -147,8 +171,8 @@ function Viagens({ viagens, ano, caixinhaViagem, aoGravar, aoExcluir }: Props) {
     setEditando(v)
     setNome(v.nome)
     setMes(v.mes)
-    setGasto(numero(v.gasto))
-    setAbater(abatidoDaViagem(v) ? numero(abatidoDaViagem(v)) : '')
+    setGasto(paraCampo(v.gasto))
+    setAbater(abatidoDaViagem(v) ? paraCampo(abatidoDaViagem(v)) : '')
     setObs(v.obs)
     setErro('')
   }

@@ -15,6 +15,8 @@ function daColecao<T>(docs: DocParaImportar[], nome: string): T[] {
 }
 
 /** Monta as abas do Excel a partir de todos os documentos do usuário. */
+const NOME_DA_OPERACAO = { compra: 'Compra', venda: 'Venda', dividendo: 'Dividendo', jcp: 'JCP' } as const
+
 export function montarPlanilhas(docs: DocParaImportar[]): { sheet: string; data: Celula[][] }[] {
   const lancamentos = daColecao<Lancamento>(docs, 'lancamentos').sort(
     (a, b) => a.mes.localeCompare(b.mes) || a.categoria.localeCompare(b.categoria),
@@ -81,7 +83,7 @@ export function montarPlanilhas(docs: DocParaImportar[]): { sheet: string; data:
         ...operacoes.map((o) => [
           texto(o.data),
           texto(o.ativo),
-          texto(o.tipo === 'compra' ? 'Compra' : 'Venda'),
+          texto(NOME_DA_OPERACAO[o.tipo]),
           { value: o.quantidade, type: Number } as Celula,
           reais(o.total),
           texto(o.obs),

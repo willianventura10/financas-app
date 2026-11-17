@@ -264,9 +264,11 @@ export interface ResumoAtivo {
 }
 
 export function resumoPorAtivo(operacoes: Operacao[], hoje: string): ResumoAtivo[] {
-  const ativos = [...new Set(operacoes.map((o) => o.ativo))].sort()
+  // Proventos não mexem em cotas nem no preço médio.
+  const negocios = operacoes.filter((o) => o.tipo === 'compra' || o.tipo === 'venda')
+  const ativos = [...new Set(negocios.map((o) => o.ativo))].sort()
   return ativos.map((ativo) => {
-    const doAtivo = operacoes.filter((o) => o.ativo === ativo)
+    const doAtivo = negocios.filter((o) => o.ativo === ativo)
     const compras = doAtivo.filter((o) => o.tipo === 'compra')
     const compradas = soma(compras.map((o) => o.quantidade))
     const cotas = compradas - soma(doAtivo.filter((o) => o.tipo === 'venda').map((o) => o.quantidade))
@@ -351,8 +353,8 @@ export function fotoDoMes(p: Painel, mes: string, aporte: number, saidas: number
 
 /** Cor do aviso, pelas mesmas palavras que a planilha usava na formatação. */
 export function tomDoStatus(status: string): 'ok' | 'aviso' | 'critico' | 'neutro' {
-  if (/Acima|VENCIDO|ATENÇÃO/.test(status)) return 'critico'
-  if (/Abaixo|Aguardar|breve|Distribuir/.test(status)) return 'aviso'
-  if (/OK|Liberado/.test(status)) return 'ok'
+  if (/Acima|VENCIDO|vencido|ATENÇÃO/.test(status)) return 'critico'
+  if (/Abaixo|Aguardar|breve|Distribuir|DARF até|Prejuízo a compensar/.test(status)) return 'aviso'
+  if (/OK|Liberado|Isento|DARF pago/.test(status)) return 'ok'
   return 'neutro'
 }

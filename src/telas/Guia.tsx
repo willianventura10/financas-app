@@ -195,6 +195,18 @@ const GUIA: Capitulo[] = [
         ],
       },
       {
+        titulo: 'Imposto de renda (aba IR)',
+        texto: [
+          'Investimentos › IR junta o que a declaração e o DARF pedem dos seus investimentos em bolsa, no ano do mês selecionado no topo.',
+          '- Vendas e DARF: para cada mês com venda, o lucro ou prejuízo de cada operação e o imposto estimado. Ações vendidas até R$ 20.000,00 no mês têm o lucro isento; ETF e BDR pagam 15% sobre qualquer lucro; FII paga 20%. O prejuízo fica guardado para abater lucros seguintes.',
+          '- Imposto abaixo de R$ 10,00 não é pago no mês: soma no seguinte. Depois de pagar, toque em "Marcar DARF como pago".',
+          '- Bens e direitos: quantidade e custo de cada ativo em 31/12 do ano anterior e do ano, pelo custo de aquisição. Ajuste o tipo do ativo (Ação, ETF, BDR ou FII) se o app tiver deduzido errado.',
+          '- Proventos: registre dividendos e JCP em Compras, escolhendo Dividendo ou JCP. O JCP vai pelo valor líquido.',
+          'O Início avisa quando há DARF a pagar no mês.',
+          'É uma estimativa para conferência: não trata day trade, o IR retido de 0,005% nem feriados, e não substitui os informes nem um contador.',
+        ],
+      },
+      {
         titulo: 'Fechar o mês',
         texto: [
           'Em Investimentos › Histórico, informe o aporte e as saídas do mês e toque em "Fechar o mês". O app guarda uma foto das caixas naquele momento.',

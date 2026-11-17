@@ -61,7 +61,13 @@ export interface Config {
   cotacoes?: Record<string, { preco: number; em: string }>
   /** Token da brapi; fica no banco do usuário, nunca no código. */
   brapiToken?: string
+  /** Tipo de cada ativo para o imposto de renda, quando difere do que o app deduz pelo código. */
+  tiposIR?: Record<string, TipoIR>
+  /** Meses ("2026-10") cujo DARF já foi pago. */
+  darfsPagos?: string[]
 }
+
+export type TipoIR = 'acao' | 'etf' | 'bdr' | 'fii'
 
 /** A aba Metas da planilha de investimentos. Percentuais são frações: 0,12 = 12%. */
 /** Uma meta em reais, com caixa própria nas posições. A ordem da lista é a ordem do aporte. */
@@ -130,7 +136,8 @@ export interface Operacao {
   id: string
   data: string
   ativo: string
-  tipo: 'compra' | 'venda'
+  /** Dividendo e JCP são proventos: quantidade 0 e o total é o valor recebido (o JCP, já sem o imposto retido). */
+  tipo: 'compra' | 'venda' | 'dividendo' | 'jcp'
   quantidade: number
   /** Valor total da operação, com custos. */
   total: number

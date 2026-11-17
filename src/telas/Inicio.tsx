@@ -1,9 +1,10 @@
 import { Medidor, Resultado } from '../componentes'
-import type { Config, Historico, Lancamento, MesDoc } from '../dados/tipos'
+import type { Config, Historico, Lancamento, MesDoc, Operacao } from '../dados/tipos'
 import { contasPendentes, resumoDoMes } from '../lib/calculos'
 import { nomeDaCategoria } from '../lib/categorias'
-import { hoje, mesDe, nomeDoMes } from '../lib/datas'
+import { dataBr, hoje, mesDe, nomeDoMes } from '../lib/datas'
 import { lembretes, lerUltimoBackup } from '../lib/lembretes'
+import { apuracaoMensal, darfEmAberto } from '../lib/ir'
 import { reais } from '../lib/dinheiro'
 import { totaisPorCategoria } from '../lib/totais'
 
@@ -13,11 +14,12 @@ interface Props {
   mesDoc: MesDoc
   config: Config | null
   historico: Historico[]
+  operacoes: Operacao[]
   /** Quem só consulta não recebe os lembretes de backup e de fechamento. */
   consulta: boolean
 }
 
-export function Inicio({ itens, mes, mesDoc, config, historico, consulta }: Props) {
+export function Inicio({ itens, mes, mesDoc, config, historico, operacoes, consulta }: Props) {
   if (!itens) return <p className="abrindo">Carregando os gastos…</p>
   if (itens.length === 0)
     return (
@@ -34,6 +36,11 @@ export function Inicio({ itens, mes, mesDoc, config, historico, consulta }: Prop
   const estouradas = config ? categorias.filter((c) => c.total > (config.metas[c.id] ?? Infinity)) : []
   // Os lembretes são de hoje, então só aparecem no mês corrente.
   const avisos = !consulta && mes === mesDe(hoje()) ? lembretes(hoje(), historico, lerUltimoBackup()) : []
+  const darf = !consulta && mes === mesDe(hoje()) ? darfEmAberto(apuracaoMensal(operacoes, config?.tiposIR), config?.darfsPagos ?? [], hoje()) : null
+  if (darf)
+    avisos.unshift(
+      `DARF de ${nomeDoMes(darf.mes)}: cerca de ${reais(darf.imposto)}, até ${dataBr(darf.vencimento)}. Veja Investimentos › IR.`,
+    )
 
   return (
     <>

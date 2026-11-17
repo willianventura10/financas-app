@@ -18,6 +18,7 @@ import {
   type ResumoAtivo,
 } from '../lib/investimentos'
 import { EditorPosicao } from './EditorPosicao'
+import { Imposto } from './Imposto'
 
 interface Props {
   posicoes: Posicao[]
@@ -29,13 +30,17 @@ interface Props {
   aoExcluir: (caminho: string, dados: object, texto: string) => void
 }
 
-type Visao = 'painel' | 'posicoes' | 'compras' | 'historico'
+type Visao = 'painel' | 'posicoes' | 'compras' | 'historico' | 'imposto'
 const VISOES: { id: Visao; nome: string }[] = [
   { id: 'painel', nome: 'Painel' },
   { id: 'posicoes', nome: 'Posições' },
   { id: 'compras', nome: 'Compras' },
   { id: 'historico', nome: 'Histórico' },
+  { id: 'imposto', nome: 'IR' },
 ]
+
+const NOME_DA_OPERACAO: Record<Operacao['tipo'], string> = { compra: 'Compra', venda: 'Venda', dividendo: 'Dividendo', jcp: 'JCP' }
+const ehProvento = (tipo: Operacao['tipo']) => tipo === 'dividendo' || tipo === 'jcp'
 
 export function Investimentos(props: Props) {
   const [visao, setVisao] = useState<Visao>('painel')
@@ -53,7 +58,7 @@ export function Investimentos(props: Props) {
 
   return (
     <>
-      <div className="visoes quatro" role="tablist" aria-label="Visões de Investimentos">
+      <div className="visoes cinco" role="tablist" aria-label="Visões de Investimentos">
         {VISOES.map((v) => (
           <button key={v.id} role="tab" aria-selected={visao === v.id} onClick={() => setVisao(v.id)}>
             {v.nome}
@@ -64,6 +69,16 @@ export function Investimentos(props: Props) {
       {visao === 'posicoes' && <VisaoPosicoes {...props} posicoes={posicoes} p={p} inv={inv} />}
       {visao === 'compras' && <VisaoCompras {...props} posicoes={posicoes} />}
       {visao === 'historico' && <VisaoHistorico key={props.mes} {...props} p={p} />}
+      {visao === 'imposto' && (
+        <Imposto
+          operacoes={props.operacoes}
+          posicoes={posicoes}
+          config={props.config!}
+          ano={props.mes.slice(0, 4)}
+          hoje={hoje()}
+          aoGravar={props.aoGravar}
+        />
+      )}
     </>
   )
 }
@@ -280,7 +295,7 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
   const agora = hoje()
   const [data, setData] = useState(agora)
   const [ativo, setAtivo] = useState('')
-  const [tipo, setTipo] = useState<'compra' | 'venda'>('compra')
+  const [tipo, setTipo] = useState<Operacao['tipo']>('compra')
   const [quantidade, setQuantidade] = useState('')
   const [total, setTotal] = useState('')
   const [erro, setErro] = useState('')
@@ -305,9 +320,10 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
 
   function adicionar(e: FormEvent) {
     e.preventDefault()
-    const qtd = Number(quantidade.replace(',', '.'))
+    const qtd = ehProvento(tipo) ? 0 : Number(quantidade.replace(',', '.'))
     const valor = lerCentavos(total)
-    if (!data || !ativo.trim() || !(qtd > 0) || !valor) return setErro('Preencha data, ativo, quantidade e valor total.')
+    if (!data || !ativo.trim() || !(ehProvento(tipo) || qtd > 0) || !valor)
+      return setErro(ehProvento(tipo) ? 'Preencha data, ativo e valor recebido.' : 'Preencha data, ativo, quantidade e valor total.')
     const id = crypto.randomUUID()
     const nova: Operacao = { id, data, ativo: ativo.trim().toUpperCase(), tipo, quantidade: qtd, total: valor, obs: '' }
     aoGravar(`operacoes/${id}`, nova)
@@ -411,17 +427,21 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
           </label>
           <label className="campo">
             Operação
-            <select value={tipo} onChange={(e) => setTipo(e.target.value as 'compra' | 'venda')}>
+            <select value={tipo} onChange={(e) => setTipo(e.target.value as Operacao['tipo'])}>
               <option value="compra">Compra</option>
               <option value="venda">Venda</option>
+              <option value="dividendo">Dividendo</option>
+              <option value="jcp">JCP</option>
             </select>
           </label>
+          {!ehProvento(tipo) && (
+            <label className="campo">
+              Quantidade
+              <input className="num" inputMode="decimal" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
+            </label>
+          )}
           <label className="campo">
-            Quantidade
-            <input className="num" inputMode="decimal" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
-          </label>
-          <label className="campo">
-            Valor total, com custos
+            {tipo === 'jcp' ? 'Valor recebido, já sem o imposto' : ehProvento(tipo) ? 'Valor recebido' : 'Valor total, com custos'}
             <input className="num" inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0,00" />
           </label>
           <button className="secundario">Registrar operação</button>
@@ -440,12 +460,15 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
             <li key={o.id}>
               <div className="linha-razao">
                 <span>
-                  {o.tipo === 'compra' ? 'Compra' : 'Venda'} de {o.quantidade} {o.ativo}
+                  {ehProvento(o.tipo)
+                    ? `${NOME_DA_OPERACAO[o.tipo]} de ${o.ativo}`
+                    : `${NOME_DA_OPERACAO[o.tipo]} de ${o.quantidade} ${o.ativo}`}
                 </span>
                 <span className="num">{reais(o.total)}</span>
               </div>
               <p className="apoio">
-                {dataBr(o.data)}, a {precoMedio(o.total / o.quantidade)} por cota. {o.obs}
+                {dataBr(o.data)}
+                {!ehProvento(o.tipo) && `, a ${precoMedio(o.total / o.quantidade)} por cota`}. {o.obs}
               </p>
               <button className="texto" onClick={() => aoExcluir(`operacoes/${o.id}`, o, 'Operação excluída')}>
                 Excluir

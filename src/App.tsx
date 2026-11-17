@@ -302,7 +302,7 @@ function Principal({ usuario, acesso }: { usuario: User | null; acesso: Acesso }
         {!firebase && <p className="faixa">Modo local: os dados ficam só neste aparelho.</p>}
 
         <main>
-          {aba === 'inicio' && <Inicio itens={itens} mes={mes} mesDoc={mesDoc} config={config} historico={historico} consulta={consulta} />}
+          {aba === 'inicio' && <Inicio itens={itens} mes={mes} mesDoc={mesDoc} config={config} historico={historico} operacoes={operacoes} consulta={consulta} />}
           {aba === 'gastos' && (
             <Gastos
               itens={itens}

@@ -337,6 +337,31 @@ export function linhasDoHistorico(historico: Historico[]): LinhaHistorico[] {
   }))
 }
 
+export interface ResumoAnoHistorico {
+  /** Total do último fechamento do ano anterior; sem ele, o do primeiro fechamento do ano. */
+  inicio: number
+  fim: number
+  aporte: number
+  saidas: number
+  /** Soma dos rendimentos estimados dos meses do ano que têm mês anterior. */
+  rendimento: number
+  meses: number
+}
+
+export function resumoDoAnoHistorico(linhas: LinhaHistorico[], ano: string): ResumoAnoHistorico | null {
+  const doAno = linhas.filter((h) => h.mes.startsWith(ano))
+  if (doAno.length === 0) return null
+  const anterior = linhas.filter((h) => h.mes < `${ano}-01`).at(-1)
+  return {
+    inicio: (anterior ?? doAno[0]).total,
+    fim: doAno[doAno.length - 1].total,
+    aporte: soma(doAno.map((h) => h.aporte)),
+    saidas: soma(doAno.map((h) => h.saidas)),
+    rendimento: soma(doAno.map((h) => h.rendimento ?? 0)),
+    meses: doAno.length,
+  }
+}
+
 /** A "Linha para o Histórico" do Painel: a foto das caixas no fechamento do mês. */
 export function fotoDoMes(p: Painel, mes: string, aporte: number, saidas: number): Historico {
   const objetivos = p.caixas.filter((c) => c.nome !== CONVEXO && c.nome !== A_ALOCAR)

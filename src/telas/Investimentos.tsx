@@ -8,6 +8,7 @@ import {
   diasAte,
   fotoDoMes,
   linhasDoHistorico,
+  resumoDoAnoHistorico,
   objetivosNoHistorico,
   painel as calcularPainel,
   resultadoDoAtivo,
@@ -291,7 +292,7 @@ function VisaoPosicoes({ posicoes, p, inv, aoGravar, aoExcluir }: Props & { p: P
   )
 }
 
-function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Props) {
+function VisaoCompras({ operacoes, posicoes, config, mes, aoGravar, aoExcluir }: Props) {
   const agora = hoje()
   const [data, setData] = useState(agora)
   const [ativo, setAtivo] = useState('')
@@ -302,7 +303,11 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
   const [cotando, setCotando] = useState('')
   const resumo = resumoPorAtivo(operacoes, agora)
   const cotacoes = config?.cotacoes ?? {}
-  const ordenadas = [...operacoes].sort((a, b) => b.data.localeCompare(a.data))
+  const ano = mes.slice(0, 4)
+  const ordenadas = operacoes.filter((o) => o.data.startsWith(ano)).sort((a, b) => b.data.localeCompare(a.data))
+  const outrosAnos = [...new Set(operacoes.map((o) => o.data.slice(0, 4)))].filter((a) => a !== ano).sort()
+  const emCarteira = resumo.filter((r) => r.cotas !== 0)
+  const zerados = resumo.filter((r) => r.cotas === 0)
   function resultado(r: ResumoAtivo) {
     const x = resultadoDoAtivo(r, cotacoes[r.ativo]?.preco)
     if (!x) return null
@@ -376,7 +381,7 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
           urgente. Guarde as notas de corretagem.
         </p>
         <ul className="razao">
-          {resumo.map((r) => (
+          {emCarteira.map((r) => (
             <li key={r.ativo}>
               <div className="linha-razao">
                 <span>{r.ativo}</span>
@@ -403,6 +408,22 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
             </li>
           ))}
         </ul>
+        {zerados.length > 0 && (
+          <details>
+            <summary>
+              {zerados.length === 1 ? '1 ativo vendido por inteiro' : `${zerados.length} ativos vendidos por inteiro`}
+            </summary>
+            <ul className="razao">
+              {zerados.map((r) => (
+                <li key={r.ativo} className="linha-razao">
+                  <span>{r.ativo}</span>
+                  <span className="apoio">Sem cotas em carteira</span>
+                </li>
+              ))}
+            </ul>
+            <p className="apoio">O resultado das vendas fica em Investimentos › IR.</p>
+          </details>
+        )}
         <div className="botoes">
           <button className="secundario" onClick={() => void atualizarCotacoes()}>
             Atualizar cotações
@@ -454,7 +475,11 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
       </section>
 
       <section className="bloco">
-        <h2>Operações</h2>
+        <h2>Operações de {ano}</h2>
+        {ordenadas.length === 0 && <p>Nenhuma operação em {ano}.</p>}
+        {outrosAnos.length > 0 && (
+          <p className="apoio">Há operações de {outrosAnos.join(', ')}. Troque o ano no topo para ver.</p>
+        )}
         <ul className="razao">
           {ordenadas.map((o) => (
             <li key={o.id}>
@@ -483,6 +508,10 @@ function VisaoCompras({ operacoes, posicoes, config, aoGravar, aoExcluir }: Prop
 
 function VisaoHistorico({ historico, mes, p, aoGravar }: Props & { p: Painel }) {
   const linhas = linhasDoHistorico(historico)
+  const ano = mes.slice(0, 4)
+  const doAno = linhas.filter((h) => h.mes.startsWith(ano))
+  const doAnoResumo = resumoDoAnoHistorico(linhas, ano)
+  const outrosAnos = [...new Set(linhas.map((h) => h.mes.slice(0, 4)))].filter((a) => a !== ano)
   const doMes = historico.find((h) => h.mes === mes)
   const [aporte, setAporte] = useState<number | null>(doMes?.aporte ?? null)
   const [saidas, setSaidas] = useState<number | null>(doMes?.saidas ?? null)
@@ -505,9 +534,25 @@ function VisaoHistorico({ historico, mes, p, aoGravar }: Props & { p: Painel }) 
       </section>
 
       <section className="bloco">
-        <h2>Evolução por caixa</h2>
+        <h2>Evolução por caixa em {ano}</h2>
+        {doAnoResumo ? (
+          <>
+            <Resultado rotulo="Patrimônio no início do ano" valor={doAnoResumo.inicio} />
+            <Resultado rotulo={`Patrimônio no último fechamento`} valor={doAnoResumo.fim} forte />
+            <Resultado rotulo="Aportes do ano" valor={doAnoResumo.aporte} />
+            <Resultado rotulo="Saídas do ano" valor={doAnoResumo.saidas} />
+            <Resultado rotulo="Rendimento estimado do ano" valor={doAnoResumo.rendimento} />
+          </>
+        ) : (
+          <p>Nenhum mês de {ano} fechado ainda.</p>
+        )}
+        {outrosAnos.length > 0 && (
+          <p className="apoio">
+            Há fechamentos de {outrosAnos.join(', ')}. Troque o ano no topo para ver.
+          </p>
+        )}
         <ul className="razao">
-          {[...linhas].reverse().map((h) => (
+          {[...doAno].reverse().map((h) => (
             <li key={h.mes}>
               <div className="linha-razao">
                 <span className="mes-historico">{nomeDoMes(h.mes)}</span>

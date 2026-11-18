@@ -189,6 +189,7 @@ const GUIA: Capitulo[] = [
         titulo: 'Compras, vendas e cotações',
         texto: [
           'Registre cada compra ou venda em Investimentos › Compras. O resumo por ativo calcula a quantidade, o preço médio e a data em que a venda fica liberada pela regra dos 30 dias.',
+          'A lista de operações mostra só as do ano selecionado no topo. Ativos vendidos por inteiro ficam recolhidos no fim do resumo por ativo.',
           'Com cotação, o resumo mostra o lucro ou prejuízo das cotas em carteira: a diferença em reais e o percentual da cotação sobre o preço médio.',
           '"Atualizar cotações" busca os preços na brapi e precisa do token cadastrado em Mais › Metas. Se a busca falhar, o preço digitado continua valendo.',
           '"Aplicar aos saldos" leva a cotação para o valor das posições com o mesmo nome do ativo.',
@@ -210,7 +211,8 @@ const GUIA: Capitulo[] = [
         titulo: 'Fechar o mês',
         texto: [
           'Em Investimentos › Histórico, informe o aporte e as saídas do mês e toque em "Fechar o mês". O app guarda uma foto das caixas naquele momento.',
-          'Se algo mudou, use "Refazer o fechamento". A evolução por caixa mostra os meses fechados.',
+          'Se algo mudou, use "Refazer o fechamento". A evolução por caixa mostra os meses fechados do ano selecionado no topo, com um resumo do ano: patrimônio no início e no último fechamento, aportes, saídas e rendimento estimado.',
+          'Os fechamentos de outros anos continuam guardados: troque o ano no topo para vê-los.',
           'Se o mês anterior ficar sem fechamento, o Início avisa em "Pede atenção".',
         ],
       },

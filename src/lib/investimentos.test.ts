@@ -7,6 +7,7 @@ import {
   linhasDoHistorico,
   painel,
   resultadoDoAtivo,
+  resumoDoAnoHistorico,
   resumoPorAtivo,
   sugestaoDeAporte,
   tomDoStatus,
@@ -281,5 +282,25 @@ describe('lucro ou prejuízo por ativo', () => {
     expect(resultadoDoAtivo(ativo, null)).toBeNull()
     expect(resultadoDoAtivo({ ...ativo, precoMedio: null }, 15000)).toBeNull()
     expect(resultadoDoAtivo({ ...ativo, cotas: 0 }, 15000)).toBeNull()
+  })
+})
+
+describe('resumo do ano no histórico', () => {
+  const fechamento = (mes: string, convexo: number, aporte = 0, saidas = 0) => ({ mes, caixas: {}, convexo, aAlocar: 0, aporte, saidas })
+  const linhas = linhasDoHistorico([
+    fechamento('2026-11', 100000),
+    fechamento('2026-12', 130000, 20000),
+    fechamento('2027-01', 150000, 10000, 5000),
+    fechamento('2027-02', 160000, 10000),
+  ])
+
+  it('parte do último fechamento do ano anterior e soma aportes, saídas e rendimentos do ano', () => {
+    // Janeiro: 150 − 130 − 10 + 5 = 15; fevereiro: 160 − 150 − 10 = 0.
+    expect(resumoDoAnoHistorico(linhas, '2027')).toEqual({ inicio: 130000, fim: 160000, aporte: 20000, saidas: 5000, rendimento: 15000, meses: 2 })
+  })
+
+  it('sem ano anterior, parte do primeiro fechamento; sem fechamento no ano, não há resumo', () => {
+    expect(resumoDoAnoHistorico(linhas, '2026')).toMatchObject({ inicio: 100000, fim: 130000, rendimento: 10000 })
+    expect(resumoDoAnoHistorico(linhas, '2025')).toBeNull()
   })
 })

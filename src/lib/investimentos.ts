@@ -340,6 +340,8 @@ export function linhasDoHistorico(historico: Historico[]): LinhaHistorico[] {
 export interface ResumoAnoHistorico {
   /** Total do último fechamento do ano anterior; sem ele, o do primeiro fechamento do ano. */
   inicio: number
+  /** Mês do fechamento usado como início: dezembro do ano anterior ou o primeiro mês fechado do ano. */
+  inicioEm: string
   fim: number
   aporte: number
   saidas: number
@@ -354,6 +356,7 @@ export function resumoDoAnoHistorico(linhas: LinhaHistorico[], ano: string): Res
   const anterior = linhas.filter((h) => h.mes < `${ano}-01`).at(-1)
   return {
     inicio: (anterior ?? doAno[0]).total,
+    inicioEm: (anterior ?? doAno[0]).mes,
     fim: doAno[doAno.length - 1].total,
     aporte: soma(doAno.map((h) => h.aporte)),
     saidas: soma(doAno.map((h) => h.saidas)),

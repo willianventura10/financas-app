@@ -537,11 +537,27 @@ function VisaoHistorico({ historico, mes, p, aoGravar }: Props & { p: Painel }) 
         <h2>Evolução por caixa em {ano}</h2>
         {doAnoResumo ? (
           <>
-            <Resultado rotulo="Patrimônio no início do ano" valor={doAnoResumo.inicio} />
-            <Resultado rotulo={`Patrimônio no último fechamento`} valor={doAnoResumo.fim} forte />
+            {doAnoResumo.inicioEm.startsWith(ano) ? (
+              doAnoResumo.meses > 1 && (
+                <Resultado rotulo={`Patrimônio no primeiro fechamento, ${nomeDoMes(doAnoResumo.inicioEm)}`} valor={doAnoResumo.inicio} />
+              )
+            ) : (
+              <Resultado rotulo="Patrimônio no início do ano" valor={doAnoResumo.inicio} />
+            )}
+            <Resultado
+              rotulo={`Patrimônio no último fechamento, ${nomeDoMes(doAno[doAno.length - 1].mes)}`}
+              valor={doAnoResumo.fim}
+              forte
+            />
             <Resultado rotulo="Aportes do ano" valor={doAnoResumo.aporte} />
             <Resultado rotulo="Saídas do ano" valor={doAnoResumo.saidas} />
             <Resultado rotulo="Rendimento estimado do ano" valor={doAnoResumo.rendimento} />
+            {doAnoResumo.inicioEm.startsWith(ano) && (
+              <p className="apoio">
+                Sem fechamento de dezembro de {Number(ano) - 1}, o ano começa a contar do primeiro mês fechado, e o
+                rendimento desse primeiro mês não entra.
+              </p>
+            )}
           </>
         ) : (
           <p>Nenhum mês de {ano} fechado ainda.</p>

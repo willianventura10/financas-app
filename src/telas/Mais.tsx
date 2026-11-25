@@ -11,6 +11,7 @@ import { abatidoDaViagem } from '../lib/calculos'
 import { lerCentavos, paraCampo, reais } from '../lib/dinheiro'
 import { firebase, sairELimpar } from '../firebase'
 import { useInstalar } from '../instalar'
+import { TEMAS, lerTema, salvarTema } from '../tema'
 
 interface Props {
   email: string | null
@@ -106,6 +107,7 @@ function Exportar({ aoLerTudo }: Pick<Props, 'aoLerTudo'>) {
 
 function Conta({ email, consulta }: Pick<Props, 'email' | 'consulta'>) {
   const instalar = useInstalar()
+  const [tema, setTema] = useState(lerTema().id)
   const instalado =
     window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true
   return (
@@ -113,6 +115,24 @@ function Conta({ email, consulta }: Pick<Props, 'email' | 'consulta'>) {
         <h2>Conta</h2>
         <p>{email ?? 'Modo local, sem login.'}</p>
         {consulta && <p>Esta conta está no modo consulta: vê os dados, mas não lança nem altera nada.</p>}
+        <h3>Cor do app</h3>
+        <div className="temas" role="group" aria-label="Cor do app">
+          {TEMAS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              aria-pressed={tema === t.id}
+              onClick={() => {
+                salvarTema(t)
+                setTema(t.id)
+              }}
+            >
+              <i style={{ background: t.cor }} />
+              {t.nome}
+            </button>
+          ))}
+        </div>
+        <p className="apoio">A cor vale só neste aparelho.</p>
         <h3>Instalar no aparelho</h3>
         {instalado ? (
           <p>O app já está instalado e você está nele agora.</p>

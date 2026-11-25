@@ -47,6 +47,14 @@ const GUIA: Capitulo[] = [
         ],
       },
       {
+        titulo: 'Cor do app',
+        texto: [
+          'Em Mais › Conta você escolhe a cor de destaque: Neutro, Azul, Esmeralda, Roxo ou Dourado.',
+          '- A escolha vale só para o aparelho em que você a fez. No outro aparelho e na conta de consulta ela é independente.',
+          '- Muda só o visual: dados, cálculos e avisos continuam iguais. Verde e vermelho seguem significando "ok" e "passou da meta".',
+        ],
+      },
+      {
         titulo: 'Ocultar os valores',
         texto: [
           'O olho no topo esconde todos os valores em reais, que viram bolinhas. Toque de novo para mostrar.',

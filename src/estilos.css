@@ -1204,6 +1204,35 @@ button:disabled {
   cursor: default;
 }
 
+.temas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.temas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  background: var(--papel-2);
+  border: 1px solid var(--eixo);
+  border-radius: 999px;
+}
+
+.temas i {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+}
+
+.temas button[aria-pressed='true'] {
+  border-color: var(--destaque);
+  box-shadow: inset 0 0 0 1px var(--destaque);
+}
+
 .visoes.quatro {
   grid-template-columns: repeat(4, 1fr);
 }

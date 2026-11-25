@@ -17,8 +17,8 @@ export default defineConfig({
         description: 'Gastos e investimentos da casa',
         lang: 'pt-BR',
         display: 'standalone',
-        background_color: '#f2f5f3',
-        theme_color: '#0e5c45',
+        background_color: '#0a0a0a',
+        theme_color: '#0a0a0a',
         icons: [
           { src: 'icons/icone-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icone-512.png', sizes: '512x512', type: 'image/png' },
